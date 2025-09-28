@@ -31,7 +31,7 @@ CookAI — это веб-приложение, которое используе
 ## 🎨 Прототипы и дизайн
 
 ### Figma-макеты:
-- [📱 Полный прототип приложения](https://www.figma.com/file/your-project-link](https://www.figma.com/make/M009AXArtUIENBj8fSu9Sf/Nonchalant-Recipe-Assistant?node-id=0-1&p=f&t=5UOfCiDVCAsSEdda-0&fullscreen=1)
+- [📱 Полный прототип приложения](https://www.figma.com/make/M009AXArtUIENBj8fSu9Sf/Nonchalant-Recipe-Assistant?node-id=0-1&p=f&t=5UOfCiDVCAsSEdda-0&fullscreen=1)
 
 ## 🔗 API сервера
 
