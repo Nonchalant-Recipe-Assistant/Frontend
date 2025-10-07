@@ -35,4 +35,5 @@ CookAI — это веб-приложение, которое используе
 
 ## 🔗 API сервера
 
-### Базовый URL: [http://127.0.0.1:8000/](https://github.com/Nonchalant-Recipe-Assistant/Backend?tab=readme-ov-file#-api-%D0%BE%D1%81%D0%BD%D0%BE%D0%B2%D0%BD%D1%8B%D0%B5-endpoints)
+### Базовый URL: [md](https://github.com/Nonchalant-Recipe-Assistant/Backend?tab=readme-ov-file#-api-%D0%BE%D1%81%D0%BD%D0%BE%D0%B2%D0%BD%D1%8B%D0%B5-endpoints)
+### Swagger: [localAPI](http://127.0.0.1:8000/docs)
