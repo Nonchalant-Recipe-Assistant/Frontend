@@ -1,5 +1,5 @@
 // src/services/api.ts
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'http://25.29.64.173:8080';
 
 // Типы для API
 export interface User {
