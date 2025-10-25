@@ -1,11 +1,12 @@
+// src/contexts/AuthContext.tsx
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
-import { getSupabaseClient } from "../utils/supabase/client"
-import { projectId, publicAnonKey } from "../utils/supabase/info"
+import { api, tokenStorage, User as BackendUser } from "../services/api"
 
+// Адаптируем тип под твое приложение
 interface User {
-  id: string
-  email: string
-  name: string
+  id: string;  // используем user_id как string
+  email: string;
+  name: string; // используем email как name, или можно добавить поле name в бэкенд позже
 }
 
 interface AuthContextType {
@@ -23,104 +24,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const supabase = getSupabaseClient()
+  // Преобразование пользователя из бэкенда в фронтенд
+  const transformUser = (backendUser: BackendUser): User => ({
+    id: backendUser.user_id.toString(),
+    email: backendUser.email,
+    name: backendUser.email, // пока используем email как name
+  })
 
+  // Проверяем токен при загрузке
   useEffect(() => {
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name || session.user.email || 'User'
-        })
-      }
-      setIsLoading(false)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.user_metadata?.name || session.user.email || 'User'
-          })
-        } else {
-          setUser(null)
+    const initAuth = async () => {
+      const token = tokenStorage.getToken();
+      if (token) {
+        try {
+          const backendUser = await api.getProfile(token);
+          setUser(transformUser(backendUser));
+        } catch (error) {
+          tokenStorage.removeToken();
+          setUser(null);
         }
-        setIsLoading(false)
       }
-    )
+      setIsLoading(false);
+    };
 
-    return () => subscription.unsubscribe()
-  }, [])
+    initAuth();
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-
-      if (error) {
-        return { success: false, error: error.message }
-      }
-
-      return { success: true }
+      const { access_token } = await api.login({ email, password });
+      const backendUser = await api.getProfile(access_token);
+      
+      tokenStorage.setToken(access_token);
+      setUser(transformUser(backendUser));
+      
+      return { success: true };
     } catch (error) {
-      return { success: false, error: 'An unexpected error occurred' }
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      return { success: false, error: errorMessage };
     }
   }
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      // First create the user via server endpoint
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-4322d4fa/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
-        },
-        body: JSON.stringify({ email, password, name })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        return { success: false, error: errorData.error || 'Failed to create account' }
-      }
-
-      // Then sign in
-      const signInResult = await signIn(email, password)
-      return signInResult
+      // Пока игнорируем name, т.к. в бэкенде его нет
+      // Можно добавить позже поле name в бэкенд
+      await api.register({ email, password });
+      // После регистрации автоматически логинимся
+      return await signIn(email, password);
     } catch (error) {
-      return { success: false, error: 'An unexpected error occurred during sign up' }
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      return { success: false, error: errorMessage };
     }
   }
 
   const signInWithGoogle = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin
-        }
-      })
-
-      if (error) {
-        return { success: false, error: error.message }
-      }
-
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: 'An unexpected error occurred with Google sign in' }
-    }
+    // Заглушка - можно реализовать позже через бэкенд
+    return { success: false, error: "Google sign in is not supported yet" };
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
+    tokenStorage.removeToken();
+    setUser(null);
   }
 
   return (

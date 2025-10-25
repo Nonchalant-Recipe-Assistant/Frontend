@@ -58,9 +58,11 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     }
   }
 
+  // В AuthModal - упрощенная версия без name
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!signUpName || !signUpEmail || !signUpPassword || !confirmPassword) {
+    // Убрали проверку name
+    if (!signUpEmail || !signUpPassword || !confirmPassword) {
       toast.error("Please fill in all fields")
       return
     }
@@ -77,12 +79,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
     setIsLoading(true)
     try {
-      const result = await signUp(signUpEmail, signUpPassword, signUpName)
+      // Передаем email и password, name пока не используем
+      const result = await signUp(signUpEmail, signUpPassword, "")
       if (result.success) {
         toast.success("Account created successfully! Welcome to Nonchalant Recipe Assistant!")
         onClose()
         // Reset form
-        setSignUpName("")
         setSignUpEmail("")
         setSignUpPassword("")
         setConfirmPassword("")
@@ -195,23 +197,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               </TabsContent>
               
               <TabsContent value="signup" className="space-y-4">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="Enter your full name"
-                        value={signUpName}
-                        onChange={(e) => setSignUpName(e.target.value)}
-                        className="pl-10"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                  
+                <form onSubmit={handleSignUp} className="space-y-4">                  
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
                     <div className="relative">

@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Users, Plus, Share2, Copy, Trash2, UserPlus, LogOut, Crown, Settings } from "lucide-react"
 import { toast } from "sonner"
 
+
+
 interface GroupManagementProps {
   onClose: () => void
 }
@@ -177,10 +179,10 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
                 <div>
                   <Label htmlFor="inviteCode">Invite Code</Label>
                   <Input
-                    id="inviteCode"
-                    placeholder="Enter invite code..."
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value)}
+                  id="inviteCode"
+                  placeholder="Enter invite code..."
+                  value={inviteCode}
+                  onChange={(e: { target: { value: string } }) => setInviteCode(e.target.value)}
                   />
                 </div>
                 <div className="flex justify-end gap-2">
