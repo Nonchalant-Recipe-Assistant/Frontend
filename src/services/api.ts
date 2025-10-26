@@ -48,14 +48,17 @@ export const api = {
     return response.json();
   },
 
-  // Логин
+  // Логин - исправленная версия с JSON
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(credentials),
+      body: JSON.stringify({
+        email: credentials.email,
+        password: credentials.password
+      }),
     });
     
     if (!response.ok) {
