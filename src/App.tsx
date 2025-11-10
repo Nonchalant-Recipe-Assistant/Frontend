@@ -1,4 +1,5 @@
 import { useState } from "react"
+import React from "react"
 import { Header } from "./components/Header"
 import { ChatInterface } from "./components/ChatInterface"
 import { ProfilePage } from "./components/ProfilePage"
@@ -6,7 +7,7 @@ import { FavoritesProvider } from "./components/FavoritesContext"
 import { AuthProvider } from "./components/AuthContext"
 import { GroupsProvider } from "./components/GroupsContext"
 import { Toaster } from "./components/ui/sonner"
-
+import { ChatWidget } from './components/ChatWidget'
 export default function App() {
   const [currentPage, setCurrentPage] = useState<'chat' | 'profile'>('chat')
 
@@ -42,6 +43,7 @@ export default function App() {
                 onSignOut={handleSignOut}
               />
             )}
+            <ChatWidget />
             <Toaster />
           </div>
         </GroupsProvider>

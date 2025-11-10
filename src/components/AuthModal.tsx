@@ -30,7 +30,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [signUpPassword, setSignUpPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
-  const { signIn, signUp, signInWithGoogle } = useAuth()
+const { signIn, signUp, signInWithGoogle } = useAuth();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()

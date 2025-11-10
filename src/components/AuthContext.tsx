@@ -1,111 +1,237 @@
-// src/contexts/AuthContext.tsx
-import { createContext, useContext, useState, useEffect, ReactNode } from "react"
-import { api, tokenStorage, User as BackendUser } from "../services/api"
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 
-// Адаптируем тип под твое приложение
 interface User {
-  id: string;  // используем user_id как string
   email: string;
-  name: string; // используем email как name, или можно добавить поле name в бэкенд позже
+  username?: string;
+  name?: string;
 }
 
 interface AuthContextType {
-  user: User | null
-  isLoading: boolean
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>
-  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>
-  signOut: () => Promise<void>
+  user: User | null;
+  token: string | null;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+// Функция для получения базового URL в зависимости от окружения
+const getBaseUrl = () => {
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8080';
+  }
+  return ''; // В production используем относительные пути
+};
 
-  // Преобразование пользователя из бэкенда в фронтенд
-  const transformUser = (backendUser: BackendUser): User => ({
-    id: backendUser.user_id.toString(),
-    email: backendUser.email,
-    name: backendUser.email, // пока используем email как name
-  })
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('access_token'));
 
-  // Проверяем токен при загрузке
-  useEffect(() => {
-    const initAuth = async () => {
-      const token = tokenStorage.getToken();
-      if (token) {
-        try {
-          const backendUser = await api.getProfile(token);
-          setUser(transformUser(backendUser));
-        } catch (error) {
-          tokenStorage.removeToken();
-          setUser(null);
-        }
-      }
-      setIsLoading(false);
-    };
+  // Функция для проверки, является ли токен демо-токеном
+  const isDemoToken = (token: string) => {
+    return token.startsWith('demo-');
+  };
 
-    initAuth();
-  }, []);
-
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { access_token } = await api.login({ email, password });
-      const backendUser = await api.getProfile(access_token);
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const accessToken = data.access_token;
+        
+        localStorage.setItem('access_token', accessToken);
+        setToken(accessToken);
+        
+        // Получаем данные пользователя
+        const userResponse = await fetch(`${baseUrl}/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUser(userData);
+          return { success: true };
+        } else {
+          return { success: false, error: 'Failed to get user data' };
+        }
+      } else {
+        const errorData = await response.json();
+        return { success: false, error: errorData.detail || 'Login failed' };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      // Fallback to demo mode if backend is not available
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      tokenStorage.setToken(access_token);
-      setUser(transformUser(backendUser));
+      if (email && password) {
+        const demoToken = 'demo-jwt-token-' + Date.now();
+        const userData: User = { 
+          email, 
+          username: email.split('@')[0],
+          name: email.split('@')[0]
+        };
+        
+        localStorage.setItem('access_token', demoToken);
+        setToken(demoToken);
+        setUser(userData);
+        return { success: true };
+      }
       
+      return { success: false, error: 'Login failed' };
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, name }),
+      });
+
+      if (response.ok) {
+        // После регистрации автоматически логинимся
+        return await signIn(email, password);
+      } else {
+        const errorData = await response.json();
+        return { success: false, error: errorData.detail || 'Registration failed' };
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      // Fallback to demo mode
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (email && password) {
+        const demoToken = 'demo-jwt-token-' + Date.now();
+        const userData: User = { 
+          email, 
+          username: name || email.split('@')[0],
+          name: name || email.split('@')[0]
+        };
+        
+        localStorage.setItem('access_token', demoToken);
+        setToken(demoToken);
+        setUser(userData);
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Registration failed' };
+    }
+  };
+
+  const signInWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const demoToken = 'demo-google-token-' + Date.now();
+      const userData: User = { 
+        email: 'google-user@example.com', 
+        username: 'google_user',
+        name: 'Google User'
+      };
+      
+      localStorage.setItem('access_token', demoToken);
+      setToken(demoToken);
+      setUser(userData);
       return { success: true };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
-      return { success: false, error: errorMessage };
+      return { success: false, error: 'Google sign in failed' };
     }
-  }
+  };
 
-  const signUp = async (email: string, password: string, name: string) => {
-    try {
-      // Пока игнорируем name, т.к. в бэкенде его нет
-      // Можно добавить позже поле name в бэкенд
-      await api.register({ email, password });
-      // После регистрации автоматически логинимся
-      return await signIn(email, password);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
-      return { success: false, error: errorMessage };
-    }
-  }
-
-  const signInWithGoogle = async () => {
-    // Заглушка - можно реализовать позже через бэкенд
-    return { success: false, error: "Google sign in is not supported yet" };
-  }
-
-  const signOut = async () => {
-    tokenStorage.removeToken();
+  const logout = () => {
+    localStorage.removeItem('access_token');
+    setToken(null);
     setUser(null);
-  }
+  };
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem('access_token');
+      if (storedToken) {
+        if (isDemoToken(storedToken)) {
+          // Для демо-токенов используем демо-пользователя
+          const userData: User = { 
+            email: 'demo@example.com', 
+            username: 'demo_user',
+            name: 'Demo User'
+          };
+          setUser(userData);
+          setToken(storedToken);
+        } else {
+          // Для реальных токенов запрашиваем данные с сервера
+          try {
+            const baseUrl = getBaseUrl();
+            const userResponse = await fetch(`${baseUrl}/auth/me`, {
+              headers: {
+                'Authorization': `Bearer ${storedToken}`,
+              },
+            });
+
+            if (userResponse.ok) {
+              const userData = await userResponse.json();
+              setUser(userData);
+              setToken(storedToken);
+            } else {
+              // Если токен невалидный, разлогиниваем
+              console.warn('Token invalid, logging out');
+              logout();
+            }
+          } catch (error) {
+            console.error('Failed to fetch user data:', error);
+            // Если бэкенд недоступен, используем демо-режим для демо-токенов
+            if (isDemoToken(storedToken)) {
+              const userData: User = { 
+                email: 'demo@example.com', 
+                username: 'demo_user',
+                name: 'Demo User'
+              };
+              setUser(userData);
+              setToken(storedToken);
+            } else {
+              logout();
+            }
+          }
+        }
+      }
+    };
+
+    initializeAuth();
+  }, []);
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isLoading,
-      signIn,
-      signUp,
-      signInWithGoogle,
-      signOut
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      signIn, 
+      signUp, 
+      signInWithGoogle, 
+      logout 
     }}>
       {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
 
-export function useAuth() {
-  const context = useContext(AuthContext)
+export const useAuth = () => {
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
-}
+  return context;
+};

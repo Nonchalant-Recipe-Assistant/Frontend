@@ -15,6 +15,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { GroupManagement } from "./GroupManagement"
 import { toast } from "sonner"
 
+// Локальный интерфейс для профиля пользователя
+interface ProfileUser {
+  email: string;
+  username?: string;
+  name?: string;
+}
+
 interface ProfilePageProps {
   onBackToChat: () => void
   onSignOut: () => void
@@ -31,6 +38,9 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
   const [testPassword, setTestPassword] = useState("")
   const [testName, setTestName] = useState("")
   const [isTestSigningUp, setIsTestSigningUp] = useState(false)
+
+  // Используем тип assertion внутри компонента
+  const profileUser = user as ProfileUser;
 
   const handleDeleteRecipe = (id: string) => {
     removeFromFavorites(id)
@@ -190,12 +200,14 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                       <span className="text-lg font-semibold text-green-700">
-                        {user.name.charAt(0).toUpperCase()}
+                        {(profileUser.name || profileUser.email).charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+                      <h3 className="font-semibold text-gray-900">
+                        {profileUser.name || profileUser.username || profileUser.email}
+                      </h3>
+                      <p className="text-sm text-gray-500">{profileUser.email}</p>
                     </div>
                   </div>
                 </CardContent>
