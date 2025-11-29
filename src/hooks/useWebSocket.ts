@@ -27,30 +27,26 @@ export const useWebSocket = () => {
       return;
     }
 
-    // Очищаем предыдущее соединение
     if (ws.current) {
       ws.current.close();
       ws.current = null;
     }
 
     try {
-      // Используем порт 8080, как указано в docker-compose.yml
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      
-      // Определяем хост в зависимости от окружения
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
       let host;
-      if (process.env.NODE_ENV === 'development') {
-        // В разработке подключаемся к localhost:8080
-        host = 'localhost:8080';
+      let protocol;
+      
+      if (apiUrl) {
+        const url = new URL(apiUrl);
+        host = url.host;
+        protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
       } else {
-        // В продакшене используем текущий хост
         host = window.location.host;
+        protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       }
       
       const wsUrl = `${protocol}//${host}/ws/chat?token=${token}`;
-      // const wsUrl = `${protocol}//${host}/ws/test`;
-
-      
       console.log('🔄 Connecting to WebSocket:', wsUrl);
       
       ws.current = new WebSocket(wsUrl);
@@ -66,11 +62,48 @@ export const useWebSocket = () => {
 
       ws.current.onmessage = (event) => {
         try {
-          const message: ChatMessage = JSON.parse(event.data);
-          console.log('📨 Received WebSocket message:', message);
+          console.log('📨 Raw WebSocket message:', event.data);
+          
+          // Parse the message - it should be a JSON string
+          const messageData = JSON.parse(event.data);
+          console.log('📨 Parsed WebSocket message:', messageData);
+          
+          // Create a proper ChatMessage object
+          const message: ChatMessage = {
+            id: messageData.id || Date.now(),
+            text: messageData.text || '',
+            sender_email: messageData.sender_email || 'unknown',
+            sender_username: messageData.sender_username || 'Unknown',
+            timestamp: messageData.timestamp || new Date().toISOString(),
+            message_type: messageData.message_type || 'text'
+          };
+          
+          console.log('📨 Processed ChatMessage:', message);
           setMessages(prev => [...prev, message]);
         } catch (error) {
           console.error('❌ Error parsing WebSocket message:', error, 'Raw data:', event.data);
+          
+          // If it's a string that looks like JSON, try to handle it
+          if (typeof event.data === 'string' && event.data.trim().startsWith('{')) {
+            try {
+              // Try to extract JSON from the string
+              const jsonMatch = event.data.match(/\{.*\}/);
+              if (jsonMatch) {
+                const messageData = JSON.parse(jsonMatch[0]);
+                const message: ChatMessage = {
+                  id: messageData.id || Date.now(),
+                  text: messageData.text || event.data, // Fallback to raw data
+                  sender_email: messageData.sender_email || 'unknown',
+                  sender_username: messageData.sender_username || 'Unknown',
+                  timestamp: messageData.timestamp || new Date().toISOString(),
+                  message_type: messageData.message_type || 'text'
+                };
+                setMessages(prev => [...prev, message]);
+              }
+            } catch (secondError) {
+              console.error('❌ Secondary parsing failed:', secondError);
+            }
+          }
         }
       };
 
@@ -79,7 +112,6 @@ export const useWebSocket = () => {
         setIsConnected(false);
         setConnectionStatus('disconnected');
         
-        // Пытаемся переподключиться
         if (reconnectAttemptsRef.current < maxReconnectAttempts && event.code !== 1000) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
           console.log(`🔄 Attempting to reconnect in ${delay}ms... (attempt ${reconnectAttemptsRef.current + 1})`);
@@ -105,15 +137,14 @@ export const useWebSocket = () => {
     }
   }, [token]);
 
-  const sendMessage = useCallback((text: string) => {
+  const sendMessage = useCallback((message: string) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      const message = {
-        text,
-        message_type: 'text'
-      };
       try {
-        ws.current.send(JSON.stringify(message));
-        console.log('📤 Message sent:', message);
+        // If the message is already a string, send it as is
+        // If it's an object, stringify it
+        const messageToSend = typeof message === 'string' ? message : JSON.stringify(message);
+        ws.current.send(messageToSend);
+        console.log('📤 Message sent:', messageToSend);
         return true;
       } catch (error) {
         console.error('❌ Error sending message:', error);
@@ -136,12 +167,9 @@ export const useWebSocket = () => {
     }
   }, []);
 
-  // Загружаем историю сообщений
   const loadMessageHistory = useCallback(async () => {
     try {
-      const baseUrl = process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:8080' 
-        : '';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const response = await fetch(`${baseUrl}/api/chat/messages`);
       if (response.ok) {
         const history = await response.json();
@@ -154,7 +182,7 @@ export const useWebSocket = () => {
 
   useEffect(() => {
     if (token) {
-      console.log('🔄 Initializing WebSocket connection with token:', token);
+      console.log('🔄 Initializing WebSocket connection with token');
       connect();
       loadMessageHistory();
     } else {

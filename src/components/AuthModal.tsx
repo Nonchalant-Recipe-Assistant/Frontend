@@ -30,7 +30,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [signUpPassword, setSignUpPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
-const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,10 +58,8 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
     }
   }
 
-  // В AuthModal - упрощенная версия без name
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Убрали проверку name
     if (!signUpEmail || !signUpPassword || !confirmPassword) {
       toast.error("Please fill in all fields")
       return
@@ -79,8 +77,7 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
 
     setIsLoading(true)
     try {
-      // Передаем email и password, name пока не используем
-      const result = await signUp(signUpEmail, signUpPassword, "")
+      const result = await signUp(signUpEmail, signUpPassword)
       if (result.success) {
         toast.success("Account created successfully! Welcome to Nonchalant Recipe Assistant!")
         onClose()
@@ -104,7 +101,6 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
       const result = await signInWithGoogle()
       if (result.success) {
         toast.success("Signing in with Google...")
-        // Note: The user will be redirected for OAuth, so we don't close the modal here
       } else {
         toast.error(result.error || "Failed to sign in with Google")
         setIsLoading(false)
@@ -115,9 +111,23 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
     }
   }
 
+  // Reset forms when modal closes
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+      // Reset all form states
+      setSignInEmail("");
+      setSignInPassword("");
+      setSignUpEmail("");
+      setSignUpPassword("");
+      setConfirmPassword("");
+      setActiveTab("signin");
+    }
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden" data-testid="auth-modal">
         <DialogHeader className="sr-only">
           <DialogTitle>Authentication</DialogTitle>
           <DialogDescription>
@@ -128,21 +138,23 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
           <CardHeader className="text-center pb-2 bg-gradient-to-r from-green-50 to-green-100">
             <div className="flex items-center justify-center gap-2 mb-2">
               <ChefHat className="w-8 h-8 text-green-600" />
-              <CardTitle className="text-2xl text-green-800">Nonchalant Recipe</CardTitle>
+              <CardTitle className="text-2xl text-green-800" data-testid="auth-modal-title">
+                Nonchalant Recipe
+              </CardTitle>
             </div>
-            <CardDescription className="text-green-700">
+            <CardDescription className="text-green-700" data-testid="auth-modal-subtitle">
               Your AI-powered cooking companion
             </CardDescription>
           </CardHeader>
           
           <CardContent className="p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" data-testid="auth-tabs">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin" data-testid="signin-tab">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" data-testid="signup-tab">Sign Up</TabsTrigger>      
               </TabsList>
               
-              <TabsContent value="signin" className="space-y-4">
+              <TabsContent value="signin" className="space-y-4" data-testid="signin-form">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signin-email">Email</Label>
@@ -156,6 +168,7 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
                         onChange={(e) => setSignInEmail(e.target.value)}
                         className="pl-10"
                         disabled={isLoading}
+                        data-testid="signin-email-input"
                       />
                     </div>
                   </div>
@@ -172,6 +185,7 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
                         onChange={(e) => setSignInPassword(e.target.value)}
                         className="pl-10 pr-10"
                         disabled={isLoading}
+                        data-testid="signin-password-input"
                       />
                       <Button
                         type="button"
@@ -180,6 +194,8 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
                         className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
                         onClick={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
+                        data-testid="toggle-password-visibility"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </Button>
@@ -190,13 +206,14 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
                     type="submit" 
                     className="w-full bg-green-600 hover:bg-green-700"
                     disabled={isLoading}
+                    data-testid="signin-submit-button"
                   >
                     {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </TabsContent>
               
-              <TabsContent value="signup" className="space-y-4">
+              <TabsContent value="signup" className="space-y-4" data-testid="signup-form">
                 <form onSubmit={handleSignUp} className="space-y-4">                  
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
@@ -210,6 +227,7 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
                         onChange={(e) => setSignUpEmail(e.target.value)}
                         className="pl-10"
                         disabled={isLoading}
+                        data-testid="signup-email-input"
                       />
                     </div>
                   </div>
@@ -226,6 +244,7 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
                         onChange={(e) => setSignUpPassword(e.target.value)}
                         className="pl-10 pr-10"
                         disabled={isLoading}
+                        data-testid="signup-password-input"
                       />
                       <Button
                         type="button"
@@ -234,6 +253,8 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
                         className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
                         onClick={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
+                        data-testid="toggle-password-visibility-signup"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </Button>
@@ -252,6 +273,7 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="pl-10"
                         disabled={isLoading}
+                        data-testid="confirm-password-input"
                       />
                     </div>
                   </div>
@@ -260,6 +282,7 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
                     type="submit" 
                     className="w-full bg-green-600 hover:bg-green-700"
                     disabled={isLoading}
+                    data-testid="signup-submit-button"
                   >
                     {isLoading ? "Creating account..." : "Create Account"}
                   </Button>
@@ -283,6 +306,7 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
                 className="w-full mt-4 border-gray-300 hover:bg-gray-50"
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
+                data-testid="google-signin-button"
               >
                 <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                   <path
@@ -306,8 +330,8 @@ const { signIn, signUp, signInWithGoogle } = useAuth();
               </Button>
             </div>
           </CardContent>
-          </Card>
-        </DialogContent>
-      </Dialog>
+        </Card>
+      </DialogContent>
+    </Dialog>
   )
 }

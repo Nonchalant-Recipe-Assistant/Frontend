@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { MessageCircle, X, Send } from "lucide-react"
+import { MessageCircle, X, Send, Lock, Globe } from "lucide-react"
 import { useAuth } from "./AuthContext"
 import { useWebSocket } from "../hooks/useWebSocket"
 import { Button } from "./ui/button"
@@ -10,15 +10,52 @@ import { Avatar, AvatarFallback } from "./ui/avatar"
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState("")
+  const [privateMode, setPrivateMode] = useState(false)
+  const [targetUser, setTargetUser] = useState("")
   const { user } = useAuth()
   const { messages, sendMessage, isConnected, connectionStatus } = useWebSocket()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // Получаем инициалы из email
+  const getUserInitials = (email: string) => {
+    if (!email) return "U"
+    return email.split('@')[0].charAt(0).toUpperCase()
+  }
+
+  // Получаем отображаемое имя из email
+  const getDisplayName = (email: string) => {
+    if (!email) return "User"
+    return email.split('@')[0]
+  }
+
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return
 
-    if (sendMessage(inputMessage)) {
+    let messageToSend
+    
+    if (privateMode && targetUser) {
+      // Отправляем объект для приватного сообщения
+      messageToSend = {
+        text: inputMessage,
+        message_type: "private",
+        target_user: targetUser
+      }
+    } else {
+      // Отправляем объект для обычного сообщения
+      messageToSend = {
+        text: inputMessage,
+        message_type: "text"
+      }
+    }
+
+    // Преобразуем в JSON строку для отправки
+    if (sendMessage(JSON.stringify(messageToSend))) {
       setInputMessage("")
+      // Сбрасываем приватный режим после отправки
+      if (privateMode) {
+        setPrivateMode(false)
+        setTargetUser("")
+      }
     }
   }
 
@@ -80,8 +117,8 @@ export function ChatWidget() {
             position: 'fixed',
             bottom: '24px',
             left: '24px',
-            width: '320px',
-            height: '384px',
+            width: '380px',
+            height: '480px',
             backgroundColor: 'white',
             borderRadius: '8px',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -95,14 +132,14 @@ export function ChatWidget() {
           <div style={{
             backgroundColor: '#16a34a',
             color: 'white',
-            padding: '12px',
+            padding: '12px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             borderTopLeftRadius: '8px',
             borderTopRightRadius: '8px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
                 width: '8px',
                 height: '8px',
@@ -112,7 +149,7 @@ export function ChatWidget() {
                                 '#fca5a5'
               }} />
               <div>
-                <h3 style={{ fontWeight: 600, fontSize: '14px' }}>Support Chat</h3>
+                <h3 style={{ fontWeight: 600, fontSize: '14px' }}>Recipe Chat</h3>
                 <p style={{ fontSize: '12px', color: '#dcfce7', opacity: 0.8 }}>
                   {connectionStatus === 'connected' ? 'Online' : 
                    connectionStatus === 'connecting' ? 'Connecting...' : 
@@ -141,6 +178,56 @@ export function ChatWidget() {
             </button>
           </div>
 
+          {/* Private Mode Toggle */}
+          <div style={{
+            padding: '8px 16px',
+            backgroundColor: '#f8f9fa',
+            borderBottom: '1px solid #e5e7eb',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '12px'
+          }}>
+            <button
+              onClick={() => setPrivateMode(!privateMode)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                border: '1px solid #d1d5db',
+                backgroundColor: privateMode ? '#dbeafe' : 'white',
+                color: privateMode ? '#1e40af' : '#6b7280',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              {privateMode ? <Lock size={12} /> : <Globe size={12} />}
+              {privateMode ? 'Private' : 'Public'}
+            </button>
+            
+            {privateMode && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
+                <span style={{ color: '#6b7280', fontSize: '11px' }}>To:</span>
+                <input
+                  type="email"
+                  placeholder="user@example.com"
+                  value={targetUser}
+                  onChange={(e) => setTargetUser(e.target.value)}
+                  style={{
+                    flex: 1,
+                    fontSize: '12px',
+                    padding: '4px 8px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Messages */}
           <div style={{ flex: 1, overflow: 'hidden' }}>
             <div style={{ height: '100%', padding: '12px' }}>
@@ -159,7 +246,7 @@ export function ChatWidget() {
                     }} />
                     <p style={{ fontSize: '14px' }}>No messages yet</p>
                     <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                      Start a conversation
+                      Start a conversation about recipes!
                     </p>
                   </div>
                 ) : (
@@ -170,9 +257,9 @@ export function ChatWidget() {
                     flexDirection: 'column',
                     gap: '12px'
                   }}>
-                    {messages.map((message) => (
+                    {messages.map((message, index) => (
                       <div
-                        key={message.id}
+                        key={`${message.id}-${index}-${message.timestamp}`}
                         style={{
                           display: 'flex',
                           gap: '8px',
@@ -192,7 +279,7 @@ export function ChatWidget() {
                             fontSize: '10px',
                             flexShrink: 0
                           }}>
-                            {message.sender_username?.charAt(0).toUpperCase() || 'S'}
+                            {getUserInitials(message.sender_email)}
                           </div>
                         )}
                         
@@ -201,20 +288,53 @@ export function ChatWidget() {
                             maxWidth: '70%',
                             borderRadius: '8px',
                             padding: '8px 12px',
-                            backgroundColor: message.sender_email === user.email ? '#16a34a' : '#f3f4f6',
+                            backgroundColor: message.sender_email === user.email 
+                              ? '#16a34a' 
+                              : message.message_type === 'private'
+                              ? '#f0f8ff'
+                              : '#f3f4f6',
                             color: message.sender_email === user.email ? 'white' : '#111827',
+                            border: message.message_type === 'private' ? '1px solid #3b82f6' : 'none',
                             borderBottomRightRadius: message.sender_email === user.email ? 0 : '8px',
-                            borderBottomLeftRadius: message.sender_email === user.email ? '8px' : 0
+                            borderBottomLeftRadius: message.sender_email === user.email ? '8px' : 0,
+                            position: 'relative'
                           }}
                         >
-                          <p style={{ fontSize: '14px', wordBreak: 'break-word' }}>
+                          {/* Бейдж для приватных сообщений */}
+                          {message.message_type === 'private' && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '-8px',
+                              left: '8px',
+                              backgroundColor: '#3b82f6',
+                              color: 'white',
+                              padding: '2px 6px',
+                              borderRadius: '10px',
+                              fontSize: '10px',
+                              lineHeight: 1
+                            }}>
+                              🔒 Private
+                            </div>
+                          )}
+                          
+                          <p style={{ 
+                            fontSize: '14px', 
+                            wordBreak: 'break-word',
+                            marginTop: message.message_type === 'private' ? '8px' : '0'
+                          }}>
                             {message.text}
                           </p>
                           <p style={{ 
                             fontSize: '11px', 
                             marginTop: '4px',
-                            color: message.sender_email === user.email ? '#dcfce7' : '#6b7280'
+                            color: message.sender_email === user.email ? '#dcfce7' : '#6b7280',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
                           }}>
+                            {message.sender_email !== user.email && (
+                              <span>{getDisplayName(message.sender_email)} • </span>
+                            )}
                             {new Date(message.timestamp).toLocaleTimeString([], { 
                               hour: '2-digit', 
                               minute: '2-digit' 
@@ -235,7 +355,7 @@ export function ChatWidget() {
                             fontSize: '10px',
                             flexShrink: 0
                           }}>
-                            {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+                            {getUserInitials(user.email)}
                           </div>
                         )}
                       </div>
@@ -258,7 +378,11 @@ export function ChatWidget() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type a message..."
+                placeholder={
+                  privateMode && targetUser 
+                    ? `Private message to ${targetUser}...` 
+                    : "Type a message about recipes..."
+                }
                 disabled={!isConnected}
                 style={{
                   flex: 1,
@@ -271,15 +395,15 @@ export function ChatWidget() {
               />
               <button
                 onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || !isConnected}
+                disabled={!inputMessage.trim() || !isConnected || (privateMode && !targetUser)}
                 style={{
-                  backgroundColor: '#16a34a',
+                  backgroundColor: privateMode ? '#3b82f6' : '#16a34a',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
                   padding: '8px',
-                  cursor: !inputMessage.trim() || !isConnected ? 'not-allowed' : 'pointer',
-                  opacity: !inputMessage.trim() || !isConnected ? 0.5 : 1,
+                  cursor: (!inputMessage.trim() || !isConnected || (privateMode && !targetUser)) ? 'not-allowed' : 'pointer',
+                  opacity: (!inputMessage.trim() || !isConnected || (privateMode && !targetUser)) ? 0.5 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'

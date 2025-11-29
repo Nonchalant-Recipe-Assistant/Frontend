@@ -15,14 +15,27 @@ interface HeaderProps {
 
 export function Header({ onProfileClick, onSignOut, isProfilePage }: HeaderProps) {
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const { user, signOut } = useAuth()
+  const { user, logout } = useAuth() // Используем logout вместо signOut
 
   const handleSignOut = async () => {
-    await signOut()
+    logout() // Просто вызываем logout из контекста
     if (onSignOut) {
       onSignOut()
     }
   }
+
+  // Получаем инициалы из email (первая буква до @)
+  const getUserInitials = () => {
+    if (!user?.email) return "U"
+    return user.email.split('@')[0].charAt(0).toUpperCase()
+  }
+
+  // Получаем отображаемое имя (часть email до @)
+  const getDisplayName = () => {
+    if (!user?.email) return "User"
+    return user.email.split('@')[0]
+  }
+
   return (
     <header className="border-b bg-white px-3 md:px-4 py-3 flex items-center justify-between">
       {/* Logo and App Name */}
@@ -48,16 +61,16 @@ export function Header({ onProfileClick, onSignOut, isProfilePage }: HeaderProps
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder-avatar.jpg" alt={user.name} />
+                  <AvatarImage src="/placeholder-avatar.jpg" alt={getDisplayName()} />
                   <AvatarFallback className="bg-green-100 text-green-700">
-                    {user.name.charAt(0).toUpperCase()}
+                    {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <div className="px-2 py-1.5 text-sm font-medium border-b">
-                <div className="truncate">{user.name}</div>
+                <div className="truncate">{getDisplayName()}</div>
                 <div className="text-xs text-gray-500 truncate">{user.email}</div>
               </div>
               <DropdownMenuItem onClick={onProfileClick}>
