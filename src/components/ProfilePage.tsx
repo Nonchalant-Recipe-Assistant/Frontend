@@ -1,8 +1,8 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useFavorites } from "./FavoritesContext"
 import { useAuth } from "./AuthContext"
 import { Button } from "./ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { ScrollArea } from "./ui/scroll-area"
 import { Separator } from "./ui/separator"
@@ -10,16 +10,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "./ui/dialog"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import { ArrowLeft, Trash2, Clock, ChefHat, Utensils, Heart, Users, TestTube, LogOut, Settings, Star } from "lucide-react"
+import { ArrowLeft, Trash2, Clock, ChefHat, Utensils, Star, Users, TestTube, LogOut, Settings, Camera, Loader2 } from "lucide-react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog"
 import { GroupManagement } from "./GroupManagement"
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { toast } from "sonner"
 
-// Локальный интерфейс для профиля пользователя
+// Interface for user profile
 interface ProfileUser {
   email: string;
   username?: string;
   name?: string;
+  avatar_url?: string;
+  email_verified?: boolean;
 }
 
 interface ProfilePageProps {
@@ -29,38 +32,87 @@ interface ProfilePageProps {
 
 export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
   const { favorites, removeFromFavorites } = useFavorites()
-  const { user, signUp } = useAuth()
+  const { user, signUp, updateAvatar, logout } = useAuth() // Added updateAvatar and logout
   const [activeTab, setActiveTab] = useState("favorites")
   const [showTestSignUp, setShowTestSignUp] = useState(false)
   
+  // Avatar state
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Test sign up form
   const [testEmail, setTestEmail] = useState("")
   const [testPassword, setTestPassword] = useState("")
-  const [testName, setTestName] = useState("")
+  // Removed testName as backend doesn't support it yet
   const [isTestSigningUp, setIsTestSigningUp] = useState(false)
 
-  // Используем тип assertion внутри компонента
+  // Cast user to our interface
   const profileUser = user as ProfileUser;
+
+  // --- Avatar Logic ---
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File is too large (max 5MB)");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const result = await updateAvatar(file);
+      if (result.success) {
+        toast.success("Avatar updated successfully!");
+      } else {
+        toast.error(result.error || "Failed to update avatar");
+      }
+    } catch (error) {
+      toast.error("An error occurred while uploading");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const getAvatarUrl = (url?: string) => {
+    if (!url) return undefined;
+    if (url.startsWith("http")) return url;
+    // Adjust localhost port if needed (e.g. 8000 vs 8080)
+    return `http://localhost:8080${url}`; 
+  };
+  // --------------------
 
   const handleDeleteRecipe = (id: string) => {
     removeFromFavorites(id)
     toast.success("Recipe removed from favorites")
   }
 
+  const handleSignOut = () => {
+    logout();
+    onSignOut();
+  }
+
   const handleTestSignUp = async () => {
-    if (!testEmail.trim() || !testPassword.trim() || !testName.trim()) {
-      toast.error("All fields are required")
+    if (!testEmail.trim() || !testPassword.trim()) {
+      toast.error("Email and password are required")
       return
     }
 
     setIsTestSigningUp(true)
     try {
-      const result = await signUp(testEmail.trim(), testPassword.trim(), testName.trim())
+      const result = await signUp(testEmail.trim(), testPassword.trim())
       if (result.success) {
         toast.success("Test account created successfully!")
         setTestEmail("")
         setTestPassword("")
-        setTestName("")
         setShowTestSignUp(false)
       } else {
         toast.error(result.error || "Failed to create test account")
@@ -73,11 +125,9 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
   }
 
   const parseRecipeContent = (content: string) => {
-    // Extract recipe title from content
     const titleMatch = content.match(/\*\*Recipe\*\*:\s*([^\n]+)/)
     const title = titleMatch ? titleMatch[1] : "Recipe"
     
-    // Extract time, difficulty, tools
     const timeMatch = content.match(/⏰\s*\*\*Time\*\*:\s*([^\n]+)/)
     const difficultyMatch = content.match(/📊\s*\*\*Difficulty\*\*:\s*([^\n]+)/)
     const toolsMatch = content.match(/🔧\s*\*\*Tools needed\*\*:\s*([^\n]+)/)
@@ -133,15 +183,6 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="testName">Full Name</Label>
-                  <Input
-                    id="testName"
-                    placeholder="Enter your name..."
-                    value={testName}
-                    onChange={(e) => setTestName(e.target.value)}
-                  />
-                </div>
-                <div>
                   <Label htmlFor="testEmail">Email</Label>
                   <Input
                     id="testEmail"
@@ -180,7 +221,7 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={onSignOut}
+            onClick={handleSignOut}
             className="border-red-200 text-red-700 hover:bg-red-50 flex-shrink-0"
           >
             <LogOut className="w-4 h-4 md:mr-2" />
@@ -192,24 +233,69 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
       {/* Content */}
       <div className="flex-1 p-3 md:p-6">
         <div className="max-w-4xl mx-auto">
-          {/* User Info */}
+          
+          {/* AVATAR & USER INFO CARD */}
           {user && (
             <div className="mb-6">
               <Card className="border-green-200">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                      <span className="text-lg font-semibold text-green-700">
-                        {(profileUser.name || profileUser.email).charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {profileUser.name || profileUser.username || profileUser.email}
-                      </h3>
-                      <p className="text-sm text-gray-500">{profileUser.email}</p>
+                <CardContent className="p-6 flex flex-col md:flex-row items-center gap-6">
+                  
+                  {/* Interactive Avatar */}
+                  <div className="relative cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                    <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-white shadow-lg bg-white">
+                      <AvatarImage 
+                        src={getAvatarUrl(profileUser?.avatar_url)} 
+                        className="object-cover"
+                      />
+                      {/* Show initials if no image */}
+                      <AvatarFallback className="text-4xl bg-green-100 text-green-700">
+                        {profileUser.email.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    {/* Small Edit Button in the corner (Doesn't block the view) */}
+                    <div className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-md border border-gray-200 hover:bg-gray-100 transition-colors">
+                      {isUploading ? (
+                        <Loader2 className="w-5 h-5 text-green-600 animate-spin" />
+                      ) : (
+                        <Camera className="w-5 h-5 text-gray-600" />
+                      )}
                     </div>
                   </div>
+                  
+                  {/* Hidden File Input */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                  />
+
+                  {/* User Details */}
+                  <div className="text-center md:text-left flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                      {profileUser.username || "Chef"}
+                    </h3>
+                    <p className="text-gray-500 mb-3">{profileUser.email}</p>
+                    
+                    <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                      {profileUser.email_verified ? (
+                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                          Verified Account
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-yellow-600 border-yellow-200">
+                          Unverified
+                        </Badge>
+                      )}
+                      <p className="text-xs text-gray-400 self-center">
+                        Click avatar to change picture
+                      </p>
+                    </div>
+                  </div>
+
                 </CardContent>
               </Card>
             </div>
