@@ -2,10 +2,13 @@ import logo from "../assets/6fb8a256c99a56e649839f9169b72a09f3f0ff8d.png";
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
-import { ChefHat, User, LogIn, UserPlus } from "lucide-react"
+import { User, LogIn, UserPlus } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { AuthModal } from "./AuthModal"
 import { useAuth } from "./AuthContext"
+import LanguageSwitcher from "./LanguageSwitcher";
+import { useTranslation } from "react-i18next"; 
+import { SearchBar } from "./SearchBar";
 
 interface HeaderProps {
   onProfileClick?: () => void
@@ -15,31 +18,30 @@ interface HeaderProps {
 
 export function Header({ onProfileClick, onSignOut, isProfilePage }: HeaderProps) {
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const { user, logout } = useAuth() // Используем logout вместо signOut
+  const { user, logout } = useAuth()
+  const { t } = useTranslation(); 
 
   const handleSignOut = async () => {
-    logout() // Просто вызываем logout из контекста
+    logout()
     if (onSignOut) {
       onSignOut()
     }
   }
 
-  // Получаем инициалы из email (первая буква до @)
   const getUserInitials = () => {
     if (!user?.email) return "U"
     return user.email.split('@')[0].charAt(0).toUpperCase()
   }
 
-  // Получаем отображаемое имя (часть email до @)
   const getDisplayName = () => {
     if (!user?.email) return "User"
     return user.email.split('@')[0]
   }
 
   return (
-    <header className="border-b bg-white px-3 md:px-4 py-3 flex items-center justify-between">
+    <header className="border-b bg-white px-3 md:px-4 py-3 flex items-center justify-between gap-4">
       {/* Logo and App Name */}
-      <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+      <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
         <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-lg overflow-hidden flex-shrink-0">
           <img 
             src={logo} 
@@ -48,13 +50,25 @@ export function Header({ onProfileClick, onSignOut, isProfilePage }: HeaderProps
           />
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="text-sm md:text-lg font-semibold text-gray-900 truncate">Nonchalant Recipe Assistant</h1>
-          <p className="text-xs md:text-sm text-gray-500 hidden sm:block">Your AI cooking companion</p>
+          <h1 className="text-sm md:text-lg font-semibold text-gray-900 truncate">
+            {t('header.title')}
+          </h1>
+          <p className="text-xs md:text-sm text-gray-500 hidden sm:block">
+            {t('header.subtitle')}
+          </p>
         </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="flex-1 max-w-xl px-2 flex justify-center">
+        <SearchBar />
       </div>
 
       {/* Auth and Profile Section */}
       <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+        
+        <LanguageSwitcher />
+
         {user ? (
           /* Authenticated user menu */
           <DropdownMenu>
@@ -75,12 +89,12 @@ export function Header({ onProfileClick, onSignOut, isProfilePage }: HeaderProps
               </div>
               <DropdownMenuItem onClick={onProfileClick}>
                 <User className="w-4 h-4 mr-2" />
-                Profile
+                {t('header.profile')} 
               </DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Help</DropdownMenuItem>
+              <DropdownMenuItem>{t('header.settings')}</DropdownMenuItem>
+              <DropdownMenuItem>{t('header.help')}</DropdownMenuItem>
               <DropdownMenuItem className="text-red-600" onClick={handleSignOut}>
-                Sign Out
+                {t('header.logout')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -94,8 +108,9 @@ export function Header({ onProfileClick, onSignOut, isProfilePage }: HeaderProps
               onClick={() => setShowAuthModal(true)}
             >
               <LogIn className="w-4 h-4 mr-1 md:mr-2" />
-              <span className="hidden md:inline">Sign In</span>
-              <span className="md:hidden">In</span>
+              <span className="hidden md:inline">{t('header.signIn')}</span>
+              {/* Короткая версия для мобилок */}
+              <span className="md:hidden">{t('header.signInShort')}</span>
             </Button>
             <Button 
               size="sm" 
@@ -103,8 +118,9 @@ export function Header({ onProfileClick, onSignOut, isProfilePage }: HeaderProps
               onClick={() => setShowAuthModal(true)}
             >
               <UserPlus className="w-4 h-4 mr-1 md:mr-2" />
-              <span className="hidden md:inline">Sign Up</span>
-              <span className="md:hidden">Up</span>
+              <span className="hidden md:inline">{t('header.signUp')}</span>
+              {/* Короткая версия для мобилок */}
+              <span className="md:hidden">{t('header.signUpShort')}</span>
             </Button>
           </>
         )}

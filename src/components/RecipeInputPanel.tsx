@@ -8,6 +8,8 @@ import { Checkbox } from "./ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { X, Send, Plus, AlertCircle, Lightbulb, ChefHat, List, Grid } from "lucide-react"
+// 1. Импорт
+import { useTranslation } from "react-i18next"
 
 interface RecipeInputPanelProps {
   onSendRecipeRequest: (data: RecipeRequestData) => void
@@ -124,6 +126,9 @@ const ingredientCategories = [
 ]
 
 export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps) {
+  // 2. Хук
+  const { t } = useTranslation()
+  
   const [ingredients, setIngredients] = useState<string[]>([])
   const [currentIngredient, setCurrentIngredient] = useState("")
   const [selectedTools, setSelectedTools] = useState<string[]>([])
@@ -169,11 +174,11 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
     const errors: string[] = []
     
     if (ingredients.length === 0) {
-      errors.push("Please add at least one ingredient")
+      errors.push(t('recipePanel.errors.noIngredients'))
     }
     
     if (ingredients.length === 1) {
-      errors.push("Try adding 2-3 ingredients for better results")
+      errors.push(t('recipePanel.errors.fewIngredients'))
     }
     
     // Проверяем, не слишком ли специфичный запрос
@@ -185,7 +190,7 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
     ].filter(Boolean).length
     
     if (specificFilters >= 3 && ingredients.length < 2) {
-      errors.push("With multiple filters, try adding more ingredients")
+      errors.push(t('recipePanel.errors.specific'))
     }
     
     return errors
@@ -195,15 +200,15 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
     const errors = validateForm();
     
     // Check for critical error first
-    if (errors.length > 0 && errors[0] === "Please add at least one ingredient") {
-      alert("Please add at least one ingredient");
+    if (errors.length > 0 && errors[0] === t('recipePanel.errors.noIngredients')) {
+      alert(t('recipePanel.errors.noIngredients'));
       return;
     }
 
     // If there are only warnings (non-critical errors), show confirm dialog
     if (errors.length > 0) {
       const shouldProceed = confirm(
-        `For better results:\n\n${errors.join('\n')}\n\nWould you like to search anyway?`
+        `${t('recipePanel.errors.improveResults')}:\n\n${errors.join('\n')}\n\n${t('recipePanel.errors.continueQuery')}`
       );
       if (!shouldProceed) return;
     }
@@ -231,11 +236,11 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
     ].filter(Boolean).length
 
     if (ingredientCount >= 3) {
-      return { quality: "good", message: "Great! This should find good matches." }
+      return { quality: "good", message: t('recipePanel.quality.good') }
     } else if (ingredientCount >= 2 && filterCount <= 2) {
-      return { quality: "fair", message: "Good start. Consider adding more ingredients." }
+      return { quality: "fair", message: t('recipePanel.quality.fair') }
     } else {
-      return { quality: "poor", message: "Try adding more ingredients or reducing filters." }
+      return { quality: "poor", message: t('recipePanel.quality.poor') }
     }
   }
 
@@ -246,11 +251,11 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
       <CardHeader className="pb-3">
         <CardTitle className="text-green-800 flex items-center gap-2">
           <ChefHat className="w-5 h-5" />
-          Recipe Request
+          {t('recipePanel.title')}
         </CardTitle>
         <div className="flex items-start gap-2 text-sm text-gray-600 bg-blue-50 p-2 rounded-md">
           <Lightbulb className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-          <span>💡 <strong>Tip:</strong> Add 2-3 main ingredients for best results. Too many filters can limit options.</span>
+          <span>💡 <strong>Tip:</strong> {t('recipePanel.tip')}</span>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -272,14 +277,14 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
         {/* Ingredients Input */}
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
-            Available Ingredients
-            <span className="text-xs text-gray-500">(2-3 recommended)</span>
+            {t('recipePanel.ingredientsLabel')}
+            <span className="text-xs text-gray-500">{t('recipePanel.ingredientsSubLabel')}</span>
           </Label>
           
           <div className="flex gap-2">
             <div className="flex-1">
               <Input
-                placeholder="Type ingredients or click below for suggestions..."
+                placeholder={t('recipePanel.ingredientsPlaceholder')}
                 value={currentIngredient}
                 onChange={(e) => setCurrentIngredient(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addIngredient()}
@@ -289,7 +294,7 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
               {/* Quick Add Buttons - всегда видимые */}
               <div className="mt-2">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-medium text-gray-700">Quick add:</span>
+                  <span className="text-sm font-medium text-gray-700">{t('recipePanel.quickAdd')}</span>
                   <div className="flex gap-1">
                     <Button
                       type="button"
@@ -300,7 +305,7 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
                       data-testid="combos-view-button"
                     >
                       <List className="w-3 h-3 mr-1" />
-                      Combos
+                      {t('recipePanel.combos')}
                     </Button>
                     <Button
                       type="button"
@@ -311,7 +316,7 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
                       data-testid="categories-view-button"
                     >
                       <Grid className="w-3 h-3 mr-1" />
-                      By Category
+                      {t('recipePanel.categories')}
                     </Button>
                   </div>
                 </div>
@@ -323,7 +328,7 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
                 >
                   {viewMode === "combos" ? (
                     <div className="space-y-2">
-                      <div className="text-xs text-gray-500 font-medium">Popular combinations:</div>
+                      <div className="text-xs text-gray-500 font-medium">{t('recipePanel.popularCombos')}</div>
                       <div className="grid grid-cols-1 gap-2">
                         {ingredientSuggestions.map((suggestion, index) => (
                           <button
@@ -341,7 +346,10 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
                     <div className="space-y-3">
                       {ingredientCategories.map((category, index) => (
                         <div key={index} data-testid={`category-${category.name.toLowerCase()}`}>
-                          <div className="font-medium text-sm text-gray-700 mb-2">{category.name}</div>
+                          <div className="font-medium text-sm text-gray-700 mb-2">
+                            {/* Перевод категорий */}
+                            {t(`recipePanel.category.${category.name.toLowerCase().split(' ')[0]}`, { defaultValue: category.name })}
+                          </div>
                           <div className="flex flex-wrap gap-1">
                             {category.items.map((item, itemIndex) => (
                               <button
@@ -373,7 +381,7 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
           
           {ingredients.length > 0 && (
             <div className="mt-3">
-              <div className="text-sm font-medium text-gray-700 mb-2">Selected ingredients:</div>
+              <div className="text-sm font-medium text-gray-700 mb-2">{t('recipePanel.selectedIngredients')}:</div>
               <div className="flex flex-wrap gap-2" data-testid="selected-ingredients">
                 {ingredients.map((ingredient, index) => (
                   <Badge 
@@ -400,7 +408,7 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
 
         {/* Cooking Tools */}
         <div className="space-y-2">
-          <Label>Available Cooking Tools <span className="text-gray-500 text-sm font-normal">(Optional)</span></Label>
+          <Label>{t('recipePanel.toolsLabel')} <span className="text-gray-500 text-sm font-normal">{t('recipePanel.optional')}</span></Label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" data-testid="cooking-tools">
             {cookingTools.map((tool) => (
               <div key={tool} className="flex items-center space-x-2">
@@ -419,14 +427,16 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Time Limit */}
           <div className="space-y-2">
-            <Label>Time Available</Label>
+            <Label>{t('recipePanel.timeLabel')}</Label>
             <Select value={timeLimit} onValueChange={setTimeLimit}>
               <SelectTrigger data-testid="time-limit-select">
-                <SelectValue placeholder="Select time limit" />
+                <SelectValue placeholder={t('recipePanel.selectTime')} />
               </SelectTrigger>
               <SelectContent>
                 {timeOptions.map((time) => (
-                  <SelectItem key={time} value={time} data-testid={`time-option-${time}`}>{time}</SelectItem>
+                  <SelectItem key={time} value={time} data-testid={`time-option-${time}`}>
+                    {time === "Any/No preference" ? t('recipePanel.anyPreference') : time}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -434,14 +444,16 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
 
           {/* Difficulty */}
           <div className="space-y-2">
-            <Label>Cooking Skill Level</Label>
+            <Label>{t('recipePanel.skillLabel')}</Label>
             <Select value={difficulty} onValueChange={setDifficulty}>
               <SelectTrigger data-testid="difficulty-select">
-                <SelectValue placeholder="Select difficulty level" />
+                <SelectValue placeholder={t('recipePanel.selectDifficulty')} />
               </SelectTrigger>
               <SelectContent>
                 {difficultyLevels.map((level) => (
-                  <SelectItem key={level} value={level} data-testid={`difficulty-option-${level}`}>{level}</SelectItem>
+                  <SelectItem key={level} value={level} data-testid={`difficulty-option-${level}`}>
+                    {level === "Any/No preference" ? t('recipePanel.anyPreference') : level}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -451,14 +463,16 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Cuisine Type */}
           <div className="space-y-2">
-            <Label>Preferred Cuisine</Label>
+            <Label>{t('recipePanel.cuisineLabel')}</Label>
             <Select value={cuisine} onValueChange={setCuisine}>
               <SelectTrigger data-testid="cuisine-select">
-                <SelectValue placeholder="Select cuisine type" />
+                <SelectValue placeholder={t('recipePanel.selectCuisine')} />
               </SelectTrigger>
               <SelectContent>
                 {cuisineTypes.map((type) => (
-                  <SelectItem key={type} value={type} data-testid={`cuisine-option-${type}`}>{type}</SelectItem>
+                  <SelectItem key={type} value={type} data-testid={`cuisine-option-${type}`}>
+                    {type === "Any/No preference" ? t('recipePanel.anyPreference') : type}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -466,14 +480,16 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
 
           {/* Dietary Preferences */}
           <div className="space-y-2">
-            <Label>Dietary Preferences</Label>
+            <Label>{t('recipePanel.dietLabel')}</Label>
             <Select value={diet} onValueChange={setDiet}>
               <SelectTrigger data-testid="diet-select">
-                <SelectValue placeholder="Select dietary preference" />
+                <SelectValue placeholder={t('recipePanel.selectDiet')} />
               </SelectTrigger>
               <SelectContent>
                 {dietOptions.map((option) => (
-                  <SelectItem key={option} value={option} data-testid={`diet-option-${option}`}>{option}</SelectItem>
+                  <SelectItem key={option} value={option} data-testid={`diet-option-${option}`}>
+                    {option === "Any/No preference" ? t('recipePanel.anyPreference') : option}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -482,9 +498,9 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
 
         {/* Additional Notes */}
         <div className="space-y-2">
-          <Label>Additional Notes <span className="text-gray-500 text-sm font-normal">(Optional)</span></Label>
+          <Label>{t('recipePanel.notesLabel')} <span className="text-gray-500 text-sm font-normal">{t('recipePanel.optional')}</span></Label>
           <Textarea
-            placeholder="Any dietary restrictions, preferences, or special requests..."
+            placeholder={t('recipePanel.notesPlaceholder')}
             value={additionalNotes}
             onChange={(e) => setAdditionalNotes(e.target.value)}
             className="resize-none h-20"
@@ -500,17 +516,17 @@ export function RecipeInputPanel({ onSendRecipeRequest }: RecipeInputPanelProps)
           data-testid="submit-recipe-button"
         >
           <Send className="w-4 h-4 mr-2" />
-          Get Recipe Suggestions
+          {t('recipePanel.submitButton')}
         </Button>
 
         {/* Quick Tips */}
         <div className="text-xs text-gray-500 space-y-1">
-          <p><strong>Better search tips:</strong></p>
+          <p><strong>{t('recipePanel.searchTipsTitle')}</strong></p>
           <ul className="list-disc list-inside space-y-1">
-            <li>Start with 2-3 main ingredients</li>
-            <li>Use fewer filters for more options</li>
-            <li>Common cuisines find more matches</li>
-            <li>Click ingredients above to add them quickly</li>
+            <li>{t('recipePanel.searchTip1')}</li>
+            <li>{t('recipePanel.searchTip2')}</li>
+            <li>{t('recipePanel.searchTip3')}</li>
+            <li>{t('recipePanel.searchTip4')}</li>
           </ul>
         </div>
       </CardContent>

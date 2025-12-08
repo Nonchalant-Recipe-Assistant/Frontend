@@ -5,6 +5,8 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Send, RotateCcw, AlertCircle } from "lucide-react"
 import { ScrollArea } from "./ui/scroll-area"
+// 1. Импорт хука
+import { useTranslation } from "react-i18next"
 
 interface Message {
   id: string
@@ -31,10 +33,14 @@ interface Recipe {
 const SPOONACULAR_API_KEY = "3ddaa87ceb0c4d25b4b8030fb9d6dbd5"
 
 export function ChatInterface() {
+  // 2. Инициализация хука
+  const { t } = useTranslation();
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Hello! I'm your Nonchalant Recipe Assistant. Tell me what ingredients you have, and I'll find real recipes for you. You can also specify your cooking tools, time constraints, and skill level below.",
+      // 3. Используем перевод для приветствия
+      text: t('chat.welcome'), 
       isUser: false,
       timestamp: "Just now"
     }
@@ -389,7 +395,8 @@ Would you like me to adjust anything or search for a different type of recipe?`
     setMessages([
       {
         id: "1",
-        text: "Hello! I'm your Nonchalant Recipe Assistant. Tell me what ingredients you have, and I'll find real recipes for you. You can also specify your cooking tools, time constraints, and skill level below.",
+        // 4. Используем перевод при сбросе
+        text: t('chat.welcome'),
         isUser: false,
         timestamp: "Just now"
       }
@@ -401,14 +408,15 @@ Would you like me to adjust anything or search for a different type of recipe?`
       {/* Chat Header */}
       <div className="border-b p-3 md:p-4 bg-green-50 flex items-center justify-between">
         <div className="min-w-0 flex-1">
-          <h2 className="text-base md:text-lg font-semibold text-green-800">Recipe Chat</h2>
-          <p className="text-xs md:text-sm text-green-600 hidden sm:block">Get real recipes from our database</p>
+          {/* 5. Переводы заголовков */}
+          <h2 className="text-base md:text-lg font-semibold text-green-800">{t('chat.title')}</h2>
+          <p className="text-xs md:text-sm text-green-600 hidden sm:block">{t('chat.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           {isLoading && (
             <div className="flex items-center gap-1 text-green-700">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-700"></div>
-              <span className="text-xs">Searching...</span>
+              <span className="text-xs">{t('chat.searching')}</span>
             </div>
           )}
           <Button 
@@ -418,7 +426,7 @@ Would you like me to adjust anything or search for a different type of recipe?`
             className="border-green-200 text-green-700 hover:bg-green-100 flex-shrink-0"
           >
             <RotateCcw className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Reset Chat</span>
+            <span className="hidden md:inline">{t('chat.reset')}</span>
           </Button>
         </div>
       </div>
@@ -459,7 +467,8 @@ Would you like me to adjust anything or search for a different type of recipe?`
       <div className="border-t p-3 md:p-4 bg-white">
         <div className="flex gap-2">
           <Input
-            placeholder="Type a message or use the recipe panel above..."
+            // 6. Перевод плейсхолдера
+            placeholder={t('chat.placeholder')}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
@@ -478,7 +487,8 @@ Would you like me to adjust anything or search for a different type of recipe?`
             onClick={() => setShowRecipePanel(!showRecipePanel)}
             className="text-xs md:text-sm text-green-600 hover:text-green-700"
           >
-            {showRecipePanel ? 'Hide' : 'Show'} Recipe Panel
+            {/* 7. Переводы кнопок показать/скрыть */}
+            {showRecipePanel ? 'Hide Recipe Panel' : 'Show Recipe Panel'}
           </button>
           <div className="flex items-center gap-1 text-xs text-gray-500">
             <AlertCircle className="w-3 h-3" />

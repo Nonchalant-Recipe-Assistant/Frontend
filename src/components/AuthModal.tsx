@@ -6,9 +6,11 @@ import { Label } from "./ui/label"
 import { Separator } from "./ui/separator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
-import { Eye, EyeOff, Mail, Lock, User, ChefHat } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, ChefHat } from "lucide-react"
 import { useAuth } from "./AuthContext"
 import { toast } from "sonner"
+// 1. Импортируем хук
+import { useTranslation } from "react-i18next"; 
 
 interface AuthModalProps {
   isOpen: boolean
@@ -16,16 +18,16 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
+  // 2. Инициализируем хук
+  const { t } = useTranslation(); 
+  
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("signin")
   
-  // Sign in form state
   const [signInEmail, setSignInEmail] = useState("")
   const [signInPassword, setSignInPassword] = useState("")
   
-  // Sign up form state
-  const [signUpName, setSignUpName] = useState("")
   const [signUpEmail, setSignUpEmail] = useState("")
   const [signUpPassword, setSignUpPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -35,7 +37,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!signInEmail || !signInPassword) {
-      toast.error("Please fill in all fields")
+      toast.error(t('auth.fillAllFields'))
       return
     }
 
@@ -43,16 +45,15 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     try {
       const result = await signIn(signInEmail, signInPassword)
       if (result.success) {
-        toast.success("Welcome back!")
+        toast.success(t('auth.welcomeBack'))
         onClose()
-        // Reset form
         setSignInEmail("")
         setSignInPassword("")
       } else {
-        toast.error(result.error || "Failed to sign in")
+        toast.error(result.error || t('errors.loginFailed'))
       }
     } catch (error) {
-      toast.error("An unexpected error occurred")
+      toast.error(t('errors.network'))
     } finally {
       setIsLoading(false)
     }
@@ -61,17 +62,17 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!signUpEmail || !signUpPassword || !confirmPassword) {
-      toast.error("Please fill in all fields")
+      toast.error(t('auth.fillAllFields'))
       return
     }
 
     if (signUpPassword !== confirmPassword) {
-      toast.error("Passwords don't match")
+      toast.error(t('auth.passwordsDoNotMatch'))
       return
     }
 
     if (signUpPassword.length < 6) {
-      toast.error("Password must be at least 6 characters")
+      toast.error(t('auth.passwordTooShort'))
       return
     }
 
@@ -79,17 +80,16 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     try {
       const result = await signUp(signUpEmail, signUpPassword)
       if (result.success) {
-        toast.success("Account created successfully! Welcome to Nonchalant Recipe Assistant!")
+        toast.success(t('auth.accountCreated'))
         onClose()
-        // Reset form
         setSignUpEmail("")
         setSignUpPassword("")
         setConfirmPassword("")
       } else {
-        toast.error(result.error || "Failed to create account")
+        toast.error(result.error || t('errors.registrationFailed'))
       }
     } catch (error) {
-      toast.error("An unexpected error occurred")
+      toast.error(t('errors.network'))
     } finally {
       setIsLoading(false)
     }
@@ -100,22 +100,20 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     try {
       const result = await signInWithGoogle()
       if (result.success) {
-        toast.success("Signing in with Google...")
+        toast.success(t('auth.signingInGoogle'))
       } else {
-        toast.error(result.error || "Failed to sign in with Google")
+        toast.error(result.error || t('errors.googleNotImplemented'))
         setIsLoading(false)
       }
     } catch (error) {
-      toast.error("An unexpected error occurred")
+      toast.error(t('errors.network'))
       setIsLoading(false)
     }
   }
 
-  // Reset forms when modal closes
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       onClose();
-      // Reset all form states
       setSignInEmail("");
       setSignInPassword("");
       setSignUpEmail("");
@@ -129,9 +127,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md p-0 overflow-hidden" data-testid="auth-modal">
         <DialogHeader className="sr-only">
-          <DialogTitle>Authentication</DialogTitle>
+          <DialogTitle>{t('auth.authenticationTitle')}</DialogTitle>
           <DialogDescription>
-            Sign in to your account or create a new one to access your favorite recipes and groups.
+            {t('auth.description')}
           </DialogDescription>
         </DialogHeader>
         <Card className="border-0 shadow-none">
@@ -139,31 +137,31 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <div className="flex items-center justify-center gap-2 mb-2">
               <ChefHat className="w-8 h-8 text-green-600" />
               <CardTitle className="text-2xl text-green-800" data-testid="auth-modal-title">
-                Nonchalant Recipe
+                {t('auth.title')}
               </CardTitle>
             </div>
             <CardDescription className="text-green-700" data-testid="auth-modal-subtitle">
-              Your AI-powered cooking companion
+              {t('auth.subtitle')}
             </CardDescription>
           </CardHeader>
           
           <CardContent className="p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" data-testid="auth-tabs">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signin" data-testid="signin-tab">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" data-testid="signup-tab">Sign Up</TabsTrigger>      
+                <TabsTrigger value="signin" data-testid="signin-tab">{t('auth.signInTab')}</TabsTrigger>
+                <TabsTrigger value="signup" data-testid="signup-tab">{t('auth.signUpTab')}</TabsTrigger>      
               </TabsList>
               
               <TabsContent value="signin" className="space-y-4" data-testid="signin-form">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">{t('auth.emailLabel')}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input
                         id="signin-email"
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder={t('auth.emailPlaceholder')}
                         value={signInEmail}
                         onChange={(e) => setSignInEmail(e.target.value)}
                         className="pl-10"
@@ -174,13 +172,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password">{t('auth.passwordLabel')}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input
                         id="signin-password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
+                        placeholder={t('auth.passwordPlaceholder')}
                         value={signInPassword}
                         onChange={(e) => setSignInPassword(e.target.value)}
                         className="pl-10 pr-10"
@@ -208,7 +206,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     disabled={isLoading}
                     data-testid="signin-submit-button"
                   >
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {isLoading ? t('auth.signingIn') : t('auth.signInButton')}
                   </Button>
                 </form>
               </TabsContent>
@@ -216,13 +214,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <TabsContent value="signup" className="space-y-4" data-testid="signup-form">
                 <form onSubmit={handleSignUp} className="space-y-4">                  
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">{t('auth.emailLabel')}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input
                         id="signup-email"
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder={t('auth.emailPlaceholder')}
                         value={signUpEmail}
                         onChange={(e) => setSignUpEmail(e.target.value)}
                         className="pl-10"
@@ -233,13 +231,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password">{t('auth.passwordLabel')}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input
                         id="signup-password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Create a password"
+                        placeholder={t('auth.createPasswordPlaceholder')}
                         value={signUpPassword}
                         onChange={(e) => setSignUpPassword(e.target.value)}
                         className="pl-10 pr-10"
@@ -262,13 +260,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <Label htmlFor="confirm-password">{t('auth.confirmPasswordLabel')}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input
                         id="confirm-password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Confirm your password"
+                        placeholder={t('auth.confirmPasswordPlaceholder')}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="pl-10"
@@ -284,7 +282,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     disabled={isLoading}
                     data-testid="signup-submit-button"
                   >
-                    {isLoading ? "Creating account..." : "Create Account"}
+                    {isLoading ? t('auth.creatingAccount') : t('auth.signUpButton')}
                   </Button>
                 </form>
               </TabsContent>
@@ -296,7 +294,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   <Separator className="w-full" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                  <span className="bg-white px-2 text-gray-500">{t('auth.orContinue')}</span>
                 </div>
               </div>
               
@@ -326,7 +324,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                {isLoading ? "Connecting..." : "Sign in with Google"}
+                {isLoading ? t('auth.connecting') : t('auth.googleButton')}
               </Button>
             </div>
           </CardContent>

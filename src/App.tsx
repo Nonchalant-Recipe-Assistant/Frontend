@@ -9,6 +9,7 @@ import { GroupsProvider } from "./components/GroupsContext"
 import { Toaster } from "./components/ui/sonner"
 import { ChatWidget } from './components/ChatWidget'
 import { VerifyEmail } from "./components/VerifyEmail"
+import { SearchPage } from "./pages/SearchPage"
 
 // This is your existing "Main Page" logic, moved into a component
 function Dashboard() {
@@ -60,6 +61,7 @@ export default function App() {
               
               {/* The new verification page */}
               <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/search" element={<SearchPage />} />
             </Routes>
             <Toaster />
           </GroupsProvider>

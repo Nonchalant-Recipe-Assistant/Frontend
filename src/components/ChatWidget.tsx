@@ -1,13 +1,15 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { MessageCircle, X, Send, Lock, Globe } from "lucide-react"
 import { useAuth } from "./AuthContext"
 import { useWebSocket } from "../hooks/useWebSocket"
-import { Button } from "./ui/button"
-import { Input } from "./ui/input"
-import { ScrollArea } from "./ui/scroll-area"
-import { Avatar, AvatarFallback } from "./ui/avatar"
+import { Send as SendIcon } from "lucide-react" // Send already imported above
+// 1. Импорт
+import { useTranslation } from "react-i18next"
 
 export function ChatWidget() {
+  // 2. Хук
+  const { t } = useTranslation()
+  
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState("")
   const [privateMode, setPrivateMode] = useState(false)
@@ -16,13 +18,11 @@ export function ChatWidget() {
   const { messages, sendMessage, isConnected, connectionStatus } = useWebSocket()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Получаем инициалы из email
   const getUserInitials = (email: string) => {
     if (!email) return "U"
     return email.split('@')[0].charAt(0).toUpperCase()
   }
 
-  // Получаем отображаемое имя из email
   const getDisplayName = (email: string) => {
     if (!email) return "User"
     return email.split('@')[0]
@@ -34,24 +34,20 @@ export function ChatWidget() {
     let messageToSend
     
     if (privateMode && targetUser) {
-      // Отправляем объект для приватного сообщения
       messageToSend = {
         text: inputMessage,
         message_type: "private",
         target_user: targetUser
       }
     } else {
-      // Отправляем объект для обычного сообщения
       messageToSend = {
         text: inputMessage,
         message_type: "text"
       }
     }
 
-    // Преобразуем в JSON строку для отправки
     if (sendMessage(JSON.stringify(messageToSend))) {
       setInputMessage("")
-      // Сбрасываем приватный режим после отправки
       if (privateMode) {
         setPrivateMode(false)
         setTargetUser("")
@@ -74,7 +70,7 @@ export function ChatWidget() {
 
   return (
     <>
-      {/* Chat Button - левый нижний угол */}
+      {/* Chat Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -110,7 +106,7 @@ export function ChatWidget() {
         </button>
       )}
 
-      {/* Chat Window - левый нижний угол */}
+      {/* Chat Window */}
       {isOpen && (
         <div
           style={{
@@ -149,11 +145,12 @@ export function ChatWidget() {
                                 '#fca5a5'
               }} />
               <div>
-                <h3 style={{ fontWeight: 600, fontSize: '14px' }}>Recipe Chat</h3>
+                {/* 3. Заголовки */}
+                <h3 style={{ fontWeight: 600, fontSize: '14px' }}>{t('chatWidget.title')}</h3>
                 <p style={{ fontSize: '12px', color: '#dcfce7', opacity: 0.8 }}>
-                  {connectionStatus === 'connected' ? 'Online' : 
-                   connectionStatus === 'connecting' ? 'Connecting...' : 
-                   'Disconnected'}
+                  {connectionStatus === 'connected' ? t('chatWidget.status.online') : 
+                   connectionStatus === 'connecting' ? t('chatWidget.status.connecting') : 
+                   t('chatWidget.status.disconnected')}
                 </p>
               </div>
             </div>
@@ -204,15 +201,16 @@ export function ChatWidget() {
               }}
             >
               {privateMode ? <Lock size={12} /> : <Globe size={12} />}
-              {privateMode ? 'Private' : 'Public'}
+              {/* 4. Приватный режим */}
+              {privateMode ? t('chatWidget.private') : t('chatWidget.public')}
             </button>
             
             {privateMode && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
-                <span style={{ color: '#6b7280', fontSize: '11px' }}>To:</span>
+                <span style={{ color: '#6b7280', fontSize: '11px' }}>{t('chatWidget.to')}</span>
                 <input
                   type="email"
-                  placeholder="user@example.com"
+                  placeholder={t('chatWidget.userPlaceholder')}
                   value={targetUser}
                   onChange={(e) => setTargetUser(e.target.value)}
                   style={{
@@ -244,9 +242,10 @@ export function ChatWidget() {
                       margin: '0 auto 8px',
                       color: '#d1d5db'
                     }} />
-                    <p style={{ fontSize: '14px' }}>No messages yet</p>
+                    {/* 5. Пустое состояние */}
+                    <p style={{ fontSize: '14px' }}>{t('chatWidget.emptyTitle')}</p>
                     <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                      Start a conversation about recipes!
+                      {t('chatWidget.emptySubtitle')}
                     </p>
                   </div>
                 ) : (
@@ -313,7 +312,7 @@ export function ChatWidget() {
                               fontSize: '10px',
                               lineHeight: 1
                             }}>
-                              🔒 Private
+                              🔒 {t('chatWidget.badgePrivate')}
                             </div>
                           )}
                           
@@ -378,10 +377,11 @@ export function ChatWidget() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
+                // 6. Плейсхолдер с логикой перевода
                 placeholder={
                   privateMode && targetUser 
-                    ? `Private message to ${targetUser}...` 
-                    : "Type a message about recipes..."
+                    ? t('chatWidget.inputPrivatePlaceholder', { user: targetUser })
+                    : t('chatWidget.inputPlaceholder')
                 }
                 disabled={!isConnected}
                 style={{

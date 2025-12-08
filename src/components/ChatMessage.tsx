@@ -3,6 +3,8 @@ import { Avatar, AvatarFallback } from "./ui/avatar"
 import { Button } from "./ui/button"
 import { useFavorites, FavoriteRecipe } from "./FavoritesContext"
 import { toast } from "sonner"
+// 1. Импорт
+import { useTranslation } from "react-i18next"
 
 interface ChatMessageProps {
   message: string
@@ -12,6 +14,8 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message, isUser, timestamp, messageId }: ChatMessageProps) {
+  // 2. Хук
+  const { t } = useTranslation()
   const { addToFavorites, isFavorite } = useFavorites()
   
   // Check if this is an AI recipe response (contains recipe formatting)
@@ -33,8 +37,10 @@ export function ChatMessage({ message, isUser, timestamp, messageId }: ChatMessa
     }
     
     addToFavorites(recipe)
-    toast.success(`Added "${title}" to favorites!`)
+    // 3. Перевод с параметром (интерполяция)
+    toast.success(t('chat.addedToFavorites', { title }))
   }
+
   return (
     <div className={`flex gap-2 md:gap-3 p-3 md:p-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       <Avatar className="w-7 h-7 md:w-8 md:h-8 flex-shrink-0">
@@ -72,7 +78,8 @@ export function ChatMessage({ message, isUser, timestamp, messageId }: ChatMessa
             >
               <Star className={`w-3 h-3 ${isAlreadyFavorited ? 'fill-current' : ''}`} />
               <span className="text-xs ml-1 hidden sm:inline">
-                {isAlreadyFavorited ? 'Saved' : 'Save'}
+                {/* 4. Перевод кнопок */}
+                {isAlreadyFavorited ? t('chat.saved') : t('chat.save')}
               </span>
             </Button>
           )}

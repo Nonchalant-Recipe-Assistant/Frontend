@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface User {
   user_id: number;
@@ -38,6 +39,9 @@ const getBaseUrl = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('access_token'));
+  
+  // Инициализируем хук переводов
+  const { t } = useTranslation();
 
   const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -71,15 +75,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else {
           localStorage.removeItem('access_token');
           setToken(null);
-          return { success: false, error: 'Failed to get user data' };
+          return { success: false, error: t('errors.userDataFetch') };
         }
       } else {
         const errorData = await response.json();
-        return { success: false, error: errorData.detail || 'Login failed' };
+        return { success: false, error: errorData.detail || t('errors.loginFailed') };
       }
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: 'Network error - cannot connect to server' };
+      return { success: false, error: t('errors.network') };
     }
   };
 
@@ -100,16 +104,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return await signIn(email, password);
       } else {
         const errorData = await response.json();
-        return { success: false, error: errorData.detail || 'Registration failed' };
+        return { success: false, error: errorData.detail || t('errors.registrationFailed') };
       }
     } catch (error) {
       console.error('Registration error:', error);
-      return { success: false, error: 'Network error - cannot connect to server' };
+      return { success: false, error: t('errors.network') };
     }
   };
 
   const signInWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
-    return { success: false, error: 'Google authentication not implemented yet' };
+    return { success: false, error: t('errors.googleNotImplemented') };
   };
 
   const resendVerification = async (): Promise<{ success: boolean; error?: string }> => {
@@ -127,11 +131,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: true };
       } else {
         const errorData = await response.json();
-        return { success: false, error: errorData.detail || 'Failed to resend verification' };
+        return { success: false, error: errorData.detail || t('errors.resendVerificationFailed') };
       }
     } catch (error) {
       console.error('Resend verification error:', error);
-      return { success: false, error: 'Network error' };
+      return { success: false, error: t('errors.network') };
     }
   };
 
@@ -154,11 +158,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: true };
       } else {
         const errorData = await response.json();
-        return { success: false, error: errorData.detail || 'Failed to verify email' };
+        return { success: false, error: errorData.detail || t('errors.verifyEmailFailed') };
       }
     } catch (error) {
       console.error('Email verification error:', error);
-      return { success: false, error: 'Network error' };
+      return { success: false, error: t('errors.network') };
     }
   };
 
@@ -185,11 +189,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: true, avatarUrl: data.avatar_url };
       } else {
         const errorData = await response.json();
-        return { success: false, error: errorData.detail || 'Failed to upload avatar' };
+        return { success: false, error: errorData.detail || t('errors.uploadAvatarFailed') };
       }
     } catch (error) {
       console.error('Avatar upload error:', error);
-      return { success: false, error: 'Network error' };
+      return { success: false, error: t('errors.network') };
     }
   };
 

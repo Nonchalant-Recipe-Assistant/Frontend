@@ -15,6 +15,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { GroupManagement } from "./GroupManagement"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { toast } from "sonner"
+// 1. Импорт
+import { useTranslation } from "react-i18next"
 
 // Interface for user profile
 interface ProfileUser {
@@ -31,8 +33,11 @@ interface ProfilePageProps {
 }
 
 export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
+  // 2. Хук
+  const { t } = useTranslation()
+  
   const { favorites, removeFromFavorites } = useFavorites()
-  const { user, signUp, updateAvatar, logout } = useAuth() // Added updateAvatar and logout
+  const { user, signUp, updateAvatar, logout } = useAuth()
   const [activeTab, setActiveTab] = useState("favorites")
   const [showTestSignUp, setShowTestSignUp] = useState(false)
   
@@ -43,7 +48,6 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
   // Test sign up form
   const [testEmail, setTestEmail] = useState("")
   const [testPassword, setTestPassword] = useState("")
-  // Removed testName as backend doesn't support it yet
   const [isTestSigningUp, setIsTestSigningUp] = useState(false)
 
   // Cast user to our interface
@@ -55,12 +59,12 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("File is too large (max 5MB)");
+      toast.error(t('profile.errors.fileTooLarge'));
       return;
     }
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file");
+      toast.error(t('profile.errors.invalidFileType'));
       return;
     }
 
@@ -68,12 +72,12 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
     try {
       const result = await updateAvatar(file);
       if (result.success) {
-        toast.success("Avatar updated successfully!");
+        toast.success(t('profile.success.avatarUpdated'));
       } else {
-        toast.error(result.error || "Failed to update avatar");
+        toast.error(result.error || t('profile.errors.avatarUpdateFailed'));
       }
     } catch (error) {
-      toast.error("An error occurred while uploading");
+      toast.error(t('profile.errors.uploadError'));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -85,14 +89,13 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
   const getAvatarUrl = (url?: string) => {
     if (!url) return undefined;
     if (url.startsWith("http")) return url;
-    // Adjust localhost port if needed (e.g. 8000 vs 8080)
     return `http://localhost:8080${url}`; 
   };
   // --------------------
 
   const handleDeleteRecipe = (id: string) => {
     removeFromFavorites(id)
-    toast.success("Recipe removed from favorites")
+    toast.success(t('profile.success.recipeRemoved'))
   }
 
   const handleSignOut = () => {
@@ -102,7 +105,7 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
 
   const handleTestSignUp = async () => {
     if (!testEmail.trim() || !testPassword.trim()) {
-      toast.error("Email and password are required")
+      toast.error(t('profile.errors.emailPasswordRequired'))
       return
     }
 
@@ -110,15 +113,15 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
     try {
       const result = await signUp(testEmail.trim(), testPassword.trim())
       if (result.success) {
-        toast.success("Test account created successfully!")
+        toast.success(t('profile.success.testAccountCreated'))
         setTestEmail("")
         setTestPassword("")
         setShowTestSignUp(false)
       } else {
-        toast.error(result.error || "Failed to create test account")
+        toast.error(result.error || t('profile.errors.testAccountFailed'))
       }
     } catch (error) {
-      toast.error("Failed to create test account")
+      toast.error(t('profile.errors.testAccountFailed'))
     } finally {
       setIsTestSigningUp(false)
     }
@@ -152,12 +155,12 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
             className="text-green-700 hover:bg-green-50 flex-shrink-0"
           >
             <ArrowLeft className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Back to Chat</span>
+            <span className="hidden md:inline">{t('profile.backToChat')}</span>
           </Button>
           <Separator orientation="vertical" className="h-6 hidden sm:block" />
           <div className="flex items-center gap-2 min-w-0">
             <Settings className="w-4 h-4 md:w-5 md:h-5 text-green-600 flex-shrink-0" />
-            <h1 className="text-base md:text-lg font-semibold text-gray-900 truncate">Profile & Settings</h1>
+            <h1 className="text-base md:text-lg font-semibold text-gray-900 truncate">{t('profile.title')}</h1>
           </div>
         </div>
         
@@ -171,47 +174,47 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
                 className="border-blue-200 text-blue-700 hover:bg-blue-50 flex-shrink-0"
               >
                 <TestTube className="w-4 h-4 md:mr-2" />
-                <span className="hidden md:inline">Test Sign Up</span>
+                <span className="hidden md:inline">{t('profile.testSignUp')}</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create Test Account</DialogTitle>
+                <DialogTitle>{t('profile.createTestAccount')}</DialogTitle>
                 <DialogDescription>
-                  Create a test account to try out the application features.
+                  {t('profile.testAccountDesc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="testEmail">Email</Label>
+                  <Label htmlFor="testEmail">{t('auth.emailLabel')}</Label>
                   <Input
                     id="testEmail"
                     type="email"
-                    placeholder="Enter test email..."
+                    placeholder={t('profile.placeholders.testEmail')}
                     value={testEmail}
                     onChange={(e) => setTestEmail(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="testPassword">Password</Label>
+                  <Label htmlFor="testPassword">{t('auth.passwordLabel')}</Label>
                   <Input
                     id="testPassword"
                     type="password"
-                    placeholder="Enter password..."
+                    placeholder={t('auth.passwordPlaceholder')}
                     value={testPassword}
                     onChange={(e) => setTestPassword(e.target.value)}
                   />
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setShowTestSignUp(false)}>
-                    Cancel
+                    {t('groups.cancel')}
                   </Button>
                   <Button 
                     onClick={handleTestSignUp} 
                     disabled={isTestSigningUp}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    {isTestSigningUp ? "Creating..." : "Create Test Account"}
+                    {isTestSigningUp ? t('auth.creatingAccount') : t('profile.createTestAccount')}
                   </Button>
                 </div>
               </div>
@@ -225,7 +228,7 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
             className="border-red-200 text-red-700 hover:bg-red-50 flex-shrink-0"
           >
             <LogOut className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Sign Out</span>
+            <span className="hidden md:inline">{t('header.logout')}</span>
           </Button>
         </div>
       </div>
@@ -276,22 +279,22 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
                   {/* User Details */}
                   <div className="text-center md:text-left flex-1">
                     <h3 className="text-2xl font-bold text-gray-900 mb-1">
-                      {profileUser.username || "Chef"}
+                      {profileUser.username || t('profile.defaultUsername')}
                     </h3>
                     <p className="text-gray-500 mb-3">{profileUser.email}</p>
                     
                     <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                       {profileUser.email_verified ? (
                         <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                          Verified Account
+                          {t('profile.verified')}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-yellow-600 border-yellow-200">
-                          Unverified
+                          {t('profile.unverified')}
                         </Badge>
                       )}
                       <p className="text-xs text-gray-400 self-center">
-                        Click avatar to change picture
+                        {t('profile.changeAvatarTip')}
                       </p>
                     </div>
                   </div>
@@ -306,16 +309,16 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="favorites" className="flex items-center gap-2">
                 <Star className="w-4 h-4" />
-                <span className="hidden sm:inline">Favorite Recipes</span>
-                <span className="sm:hidden">Favorites</span>
+                <span className="hidden sm:inline">{t('profile.tabs.favorites')}</span>
+                <span className="sm:hidden">{t('profile.tabs.favoritesShort')}</span>
                 <Badge variant="secondary" className="ml-1">
                   {favorites.length}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="groups" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Groups & Sharing</span>
-                <span className="sm:hidden">Groups</span>
+                <span className="hidden sm:inline">{t('profile.tabs.groups')}</span>
+                <span className="sm:hidden">{t('profile.tabs.groupsShort')}</span>
               </TabsTrigger>
             </TabsList>
 
@@ -324,15 +327,15 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
                 <Card className="border-green-200">
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <ChefHat className="w-12 h-12 text-green-300 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No favorite recipes yet</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('profile.favorites.emptyTitle')}</h3>
                     <p className="text-gray-500 text-center mb-4">
-                      Start a conversation with our AI assistant and save recipes you like by clicking the star button.
+                      {t('profile.favorites.emptyDesc')}
                     </p>
                     <Button 
                       onClick={onBackToChat}
                       className="bg-green-600 hover:bg-green-700"
                     >
-                      Start Cooking
+                      {t('profile.favorites.startCooking')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -370,7 +373,7 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
                                   )}
                                 </div>
                                 <p className="text-xs md:text-sm text-gray-500">
-                                  Saved on {new Date(recipe.timestamp).toLocaleDateString()}
+                                  {t('profile.favorites.savedOn', { date: new Date(recipe.timestamp).toLocaleDateString() })}
                                 </p>
                               </div>
                               
@@ -386,19 +389,18 @@ export function ProfilePage({ onBackToChat, onSignOut }: ProfilePageProps) {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent className="max-w-sm md:max-w-lg">
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Remove from favorites?</AlertDialogTitle>
+                                    <AlertDialogTitle>{t('profile.favorites.confirmRemoveTitle')}</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This will permanently remove "{parsed.title}" from your favorite recipes. 
-                                      This action cannot be undone.
+                                      {t('profile.favorites.confirmRemoveDesc', { title: parsed.title })}
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel>{t('groups.cancel')}</AlertDialogCancel>
                                     <AlertDialogAction 
                                       onClick={() => handleDeleteRecipe(recipe.id)}
                                       className="bg-red-600 hover:bg-red-700"
                                     >
-                                      Remove
+                                      {t('profile.favorites.remove')}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>

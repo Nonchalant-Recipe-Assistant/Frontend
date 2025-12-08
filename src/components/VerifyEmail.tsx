@@ -4,25 +4,30 @@ import { useAuth } from "./AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
+// 1. Импорт
+import { useTranslation } from "react-i18next";
 
 export function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const { verifyEmail } = useAuth();
   const navigate = useNavigate();
+  // 2. Хук
+  const { t } = useTranslation();
   
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [message, setMessage] = useState("Ready to verify.");
+  // 3. Используем t() для начального состояния
+  const [message, setMessage] = useState(t('verifyEmail.status.ready'));
 
   const runVerification = async () => {
     if (!token) {
       setStatus("error");
-      setMessage("No verification token found.");
+      setMessage(t('verifyEmail.status.noToken'));
       return;
     }
 
     setStatus("loading");
-    setMessage("Connecting to server...");
+    setMessage(t('verifyEmail.status.connecting'));
     
     // DEBUG LOGS - Check your browser console (F12) for these
     console.log("🚀 Starting verification...");
@@ -34,15 +39,15 @@ export function VerifyEmail() {
 
       if (result.success) {
         setStatus("success");
-        setMessage("Email verified successfully!");
+        setMessage(t('verifyEmail.status.success'));
       } else {
         setStatus("error");
-        setMessage(result.error || "Verification failed.");
+        setMessage(result.error || t('verifyEmail.status.failed'));
       }
     } catch (error) {
       console.error("❌ Verification error:", error);
       setStatus("error");
-      setMessage("An unexpected error occurred. Check Console.");
+      setMessage(t('verifyEmail.status.error'));
     }
   };
 
@@ -57,7 +62,7 @@ export function VerifyEmail() {
     <div className="flex h-screen w-full items-center justify-center bg-gray-50">
       <Card className="w-[400px]">
         <CardHeader className="text-center">
-          <CardTitle>Email Verification</CardTitle>
+          <CardTitle>{t('verifyEmail.title')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4 text-center">
           
@@ -73,7 +78,7 @@ export function VerifyEmail() {
               <CheckCircle className="h-12 w-12 text-green-600" />
               <p className="text-green-700 font-medium">{message}</p>
               <Button onClick={() => navigate("/")} className="mt-2 bg-green-600 hover:bg-green-700">
-                Go to App
+                {t('verifyEmail.buttons.goToApp')}
               </Button>
             </>
           )}
@@ -84,11 +89,11 @@ export function VerifyEmail() {
               <p className="text-red-700 font-medium">{message}</p>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => navigate("/")}>
-                  Home
+                  {t('verifyEmail.buttons.home')}
                 </Button>
                 {/* Manual Retry Button */}
                 <Button onClick={runVerification}>
-                  Try Again
+                  {t('verifyEmail.buttons.tryAgain')}
                 </Button>
               </div>
             </>

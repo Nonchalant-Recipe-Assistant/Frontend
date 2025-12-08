@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useGroups } from "./GroupsContext"
 import { useFavorites } from "./FavoritesContext"
 import { Button } from "./ui/button"
@@ -11,17 +11,20 @@ import { ScrollArea } from "./ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "./ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
-import { Users, Plus, Share2, Copy, Trash2, UserPlus, LogOut, Crown, Settings } from "lucide-react"
+import { Users, Plus, Share2, Copy, Trash2, UserPlus, LogOut, Crown } from "lucide-react"
 import { toast } from "sonner"
-
-
+// 1. Импорт хука
+import { useTranslation } from "react-i18next"
 
 interface GroupManagementProps {
   onClose: () => void
 }
 
 export function GroupManagement({ onClose }: GroupManagementProps) {
-  const { groups, isLoading, createGroup, joinGroup, leaveGroup, deleteGroup, getGroupMembers, shareRecipeWithGroup, getGroupInviteCode, refreshGroups } = useGroups()
+  // 2. Инициализация хука
+  const { t } = useTranslation()
+  
+  const { groups, isLoading, createGroup, joinGroup, leaveGroup, deleteGroup, shareRecipeWithGroup, getGroupInviteCode } = useGroups()
   const { favorites } = useFavorites()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showJoinDialog, setShowJoinDialog] = useState(false)
@@ -40,7 +43,7 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
-      toast.error("Group name is required")
+      toast.error(t('groups.errors.nameRequired'))
       return
     }
 
@@ -48,15 +51,15 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
     try {
       const result = await createGroup(groupName.trim(), groupDescription.trim())
       if (result.success) {
-        toast.success("Group created successfully!")
+        toast.success(t('groups.success.created'))
         setGroupName("")
         setGroupDescription("")
         setShowCreateDialog(false)
       } else {
-        toast.error(result.error || "Failed to create group")
+        toast.error(result.error || t('groups.errors.createFailed'))
       }
     } catch (error) {
-      toast.error("Failed to create group")
+      toast.error(t('groups.errors.createFailed'))
     } finally {
       setIsCreating(false)
     }
@@ -64,7 +67,7 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
 
   const handleJoinGroup = async () => {
     if (!inviteCode.trim()) {
-      toast.error("Invite code is required")
+      toast.error(t('groups.errors.codeRequired'))
       return
     }
 
@@ -72,14 +75,14 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
     try {
       const result = await joinGroup(inviteCode.trim())
       if (result.success) {
-        toast.success("Successfully joined group!")
+        toast.success(t('groups.success.joined'))
         setInviteCode("")
         setShowJoinDialog(false)
       } else {
-        toast.error(result.error || "Failed to join group")
+        toast.error(result.error || t('groups.errors.joinFailed'))
       }
     } catch (error) {
-      toast.error("Failed to join group")
+      toast.error(t('groups.errors.joinFailed'))
     } finally {
       setIsJoining(false)
     }
@@ -87,28 +90,28 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
 
   const handleShareRecipe = async () => {
     if (!selectedGroup || !selectedRecipe) {
-      toast.error("Please select both a group and a recipe")
+      toast.error(t('groups.errors.selectBoth'))
       return
     }
 
     const recipe = favorites.find(f => f.id === selectedRecipe)
     if (!recipe) {
-      toast.error("Recipe not found")
+      toast.error(t('groups.errors.recipeNotFound'))
       return
     }
 
     try {
       const result = await shareRecipeWithGroup(selectedGroup, selectedRecipe, recipe.content)
       if (result.success) {
-        toast.success("Recipe shared successfully!")
+        toast.success(t('groups.success.shared'))
         setSelectedGroup("")
         setSelectedRecipe("")
         setShowShareDialog(false)
       } else {
-        toast.error(result.error || "Failed to share recipe")
+        toast.error(result.error || t('groups.errors.shareFailed'))
       }
     } catch (error) {
-      toast.error("Failed to share recipe")
+      toast.error(t('groups.errors.shareFailed'))
     }
   }
 
@@ -117,12 +120,12 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
       const inviteCode = await getGroupInviteCode(groupId)
       if (inviteCode) {
         await navigator.clipboard.writeText(inviteCode)
-        toast.success("Invite code copied to clipboard!")
+        toast.success(t('groups.success.codeCopied'))
       } else {
-        toast.error("Failed to get invite code")
+        toast.error(t('groups.errors.getCodeFailed'))
       }
     } catch (error) {
-      toast.error("Failed to copy invite code")
+      toast.error(t('groups.errors.copyFailed'))
     }
   }
 
@@ -130,12 +133,12 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
     try {
       const result = await leaveGroup(groupId)
       if (result.success) {
-        toast.success("Left group successfully")
+        toast.success(t('groups.success.left'))
       } else {
-        toast.error(result.error || "Failed to leave group")
+        toast.error(result.error || t('groups.errors.leaveFailed'))
       }
     } catch (error) {
-      toast.error("Failed to leave group")
+      toast.error(t('groups.errors.leaveFailed'))
     }
   }
 
@@ -143,12 +146,12 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
     try {
       const result = await deleteGroup(groupId)
       if (result.success) {
-        toast.success("Group deleted successfully")
+        toast.success(t('groups.success.deleted'))
       } else {
-        toast.error(result.error || "Failed to delete group")
+        toast.error(result.error || t('groups.errors.deleteFailed'))
       }
     } catch (error) {
-      toast.error("Failed to delete group")
+      toast.error(t('groups.errors.deleteFailed'))
     }
   }
 
@@ -158,43 +161,43 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-green-600" />
-          <h2 className="text-xl font-semibold text-gray-900">My Groups</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('groups.myGroups')}</h2>
         </div>
         <div className="flex items-center gap-2">
           <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="border-green-200 text-green-700 hover:bg-green-50">
                 <UserPlus className="w-4 h-4 mr-2" />
-                Join Group
+                {t('groups.join')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Join a Group</DialogTitle>
+                <DialogTitle>{t('groups.joinTitle')}</DialogTitle>
                 <DialogDescription>
-                  Enter an invite code to join an existing recipe sharing group.
+                  {t('groups.joinDesc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="inviteCode">Invite Code</Label>
+                  <Label htmlFor="inviteCode">{t('groups.codeLabel')}</Label>
                   <Input
-                  id="inviteCode"
-                  placeholder="Enter invite code..."
-                  value={inviteCode}
-                  onChange={(e: { target: { value: string } }) => setInviteCode(e.target.value)}
+                    id="inviteCode"
+                    placeholder={t('groups.placeholders.code')}
+                    value={inviteCode}
+                    onChange={(e: { target: { value: string } }) => setInviteCode(e.target.value)}
                   />
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setShowJoinDialog(false)}>
-                    Cancel
+                    {t('groups.cancel')}
                   </Button>
                   <Button 
                     onClick={handleJoinGroup} 
                     disabled={isJoining}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    {isJoining ? "Joining..." : "Join Group"}
+                    {isJoining ? t('groups.joining') : t('groups.join')}
                   </Button>
                 </div>
               </div>
@@ -205,31 +208,32 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
             <DialogTrigger asChild>
               <Button size="sm" className="bg-green-600 hover:bg-green-700">
                 <Plus className="w-4 h-4 mr-2" />
-                Create Group
+                {t('groups.create')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create New Group</DialogTitle>
+                <DialogTitle>{t('groups.createTitle')}</DialogTitle>
                 <DialogDescription>
-                  Create a new group to share recipes with family and friends.
+                  {t('groups.createDesc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="groupName">Group Name</Label>
+                  <Label htmlFor="groupName">{t('groups.nameLabel')}</Label>
                   <Input
                     id="groupName"
-                    placeholder="Enter group name..."
+                    placeholder={t('groups.placeholders.name')}
                     value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)} className="mx-[0px] my-[8px]"
+                    onChange={(e) => setGroupName(e.target.value)} 
+                    className="mx-[0px] my-[8px]"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="groupDescription">Description (Optional)</Label>
+                  <Label htmlFor="groupDescription">{t('groups.descLabel')}</Label>
                   <Textarea
                     id="groupDescription"
-                    placeholder="Describe your group..."
+                    placeholder={t('groups.placeholders.desc')}
                     value={groupDescription}
                     onChange={(e) => setGroupDescription(e.target.value)}
                     className="resize-none h-20 px-[12px] py-[8px] mx-[0px] my-[8px]"
@@ -237,14 +241,14 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                    Cancel
+                    {t('groups.cancel')}
                   </Button>
                   <Button 
                     onClick={handleCreateGroup} 
                     disabled={isCreating}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    {isCreating ? "Creating..." : "Create Group"}
+                    {isCreating ? t('groups.creating') : t('groups.create')}
                   </Button>
                 </div>
               </div>
@@ -256,29 +260,29 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
       {/* Groups List */}
       {isLoading ? (
         <div className="text-center py-8">
-          <p className="text-gray-500">Loading groups...</p>
+          <p className="text-gray-500">{t('groups.loading')}</p>
         </div>
       ) : groups.length === 0 ? (
         <Card className="border-green-200">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="w-12 h-12 text-green-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No groups yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('groups.noGroups')}</h3>
             <p className="text-gray-500 text-center mb-4">
-              Create a group to share recipes with family and friends, or join an existing group.
+              {t('groups.noGroupsDesc')}
             </p>
             <div className="flex gap-2">
               <Button 
                 onClick={() => setShowCreateDialog(true)}
                 className="bg-green-600 hover:bg-green-700"
               >
-                Create Your First Group
+                {t('groups.createFirst')}
               </Button>
               <Button 
                 variant="outline"
                 onClick={() => setShowJoinDialog(true)}
                 className="border-green-200 text-green-700 hover:bg-green-50"
               >
-                Join a Group
+                {t('groups.join')}
               </Button>
             </div>
           </CardContent>
@@ -296,7 +300,7 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
                         {group.isOwner && (
                           <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                             <Crown className="w-3 h-3 mr-1" />
-                            Owner
+                            {t('groups.owner')}
                           </Badge>
                         )}
                       </div>
@@ -304,8 +308,9 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
                         <p className="text-sm text-gray-600 mb-2">{group.description}</p>
                       )}
                       <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <span>{group.memberCount} member{group.memberCount !== 1 ? 's' : ''}</span>
-                        <span>Created {new Date(group.createdAt).toLocaleDateString()}</span>
+                        {/* Использование интерполяции для множественного числа и даты */}
+                        <span>{t('groups.members', { count: group.memberCount })}</span>
+                        <span>{t('groups.created', { date: new Date(group.createdAt).toLocaleDateString() })}</span>
                       </div>
                     </div>
                     
@@ -315,6 +320,7 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
                         size="sm"
                         onClick={() => handleCopyInviteCode(group.id)}
                         className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        title={t('groups.copyInvite')}
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -332,19 +338,18 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Group?</AlertDialogTitle>
+                              <AlertDialogTitle>{t('groups.confirmDeleteTitle')}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will permanently delete "{group.name}" and remove all members. 
-                                This action cannot be undone.
+                                {t('groups.confirmDeleteDesc', { name: group.name })}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>{t('groups.cancel')}</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={() => handleDeleteGroup(group.id)}
                                 className="bg-red-600 hover:bg-red-700"
                               >
-                                Delete Group
+                                {t('groups.delete')}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -362,18 +367,18 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Leave Group?</AlertDialogTitle>
+                              <AlertDialogTitle>{t('groups.confirmLeaveTitle')}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to leave "{group.name}"? You'll need a new invite to rejoin.
+                                {t('groups.confirmLeaveDesc', { name: group.name })}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>{t('groups.cancel')}</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={() => handleLeaveGroup(group.id)}
                                 className="bg-red-600 hover:bg-red-700"
                               >
-                                Leave Group
+                                {t('groups.leave')}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -395,22 +400,22 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
             <DialogTrigger asChild>
               <Button variant="outline" className="w-full border-green-200 text-green-700 hover:bg-green-50">
                 <Share2 className="w-4 h-4 mr-2" />
-                Share Recipe with Group
+                {t('groups.shareBtn')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Share Recipe</DialogTitle>
+                <DialogTitle>{t('groups.shareTitle')}</DialogTitle>
                 <DialogDescription>
-                  Share one of your favorite recipes with a group you're a member of.
+                  {t('groups.shareDesc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label>Select Group</Label>
+                  <Label>{t('groups.selectGroup')}</Label>
                   <Select value={selectedGroup} onValueChange={setSelectedGroup}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose a group..." />
+                      <SelectValue placeholder={t('groups.placeholders.selectGroup')} />
                     </SelectTrigger>
                     <SelectContent>
                       {groups.map((group) => (
@@ -422,10 +427,10 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label>Select Recipe</Label>
+                  <Label>{t('groups.selectRecipe')}</Label>
                   <Select value={selectedRecipe} onValueChange={setSelectedRecipe}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose a recipe..." />
+                      <SelectValue placeholder={t('groups.placeholders.selectRecipe')} />
                     </SelectTrigger>
                     <SelectContent>
                       {favorites.map((recipe) => (
@@ -438,13 +443,13 @@ export function GroupManagement({ onClose }: GroupManagementProps) {
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setShowShareDialog(false)}>
-                    Cancel
+                    {t('groups.cancel')}
                   </Button>
                   <Button 
                     onClick={handleShareRecipe}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    Share Recipe
+                    {t('groups.share')}
                   </Button>
                 </div>
               </div>

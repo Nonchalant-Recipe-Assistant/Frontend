@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { useAuth } from "./AuthContext"
 import { getSupabaseClient } from "../utils/supabase/client"
 import { projectId, publicAnonKey } from "../utils/supabase/info"
+// 1. Импорт
+import { useTranslation } from "react-i18next"
 
 interface Group {
   id: string
@@ -40,10 +42,12 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
   const [groups, setGroups] = useState<Group[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const { user } = useAuth()
+  // 2. Хук
+  const { t } = useTranslation()
 
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     if (!user) {
-      throw new Error('User not authenticated')
+      throw new Error(t('errors.notAuthenticated'))
     }
 
     // Get the current session to get the access token
@@ -51,7 +55,7 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
     const { data: { session } } = await supabase.auth.getSession()
     
     if (!session?.access_token) {
-      throw new Error('No valid session found')
+      throw new Error(t('errors.noSession'))
     }
 
     const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-4322d4fa${endpoint}`, {
@@ -64,8 +68,8 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Network error' }))
-      throw new Error(errorData.error || 'Request failed')
+      const errorData = await response.json().catch(() => ({ error: t('errors.network') }))
+      throw new Error(errorData.error || t('errors.requestFailed'))
     }
 
     return response.json()
@@ -107,7 +111,7 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   const createGroup = async (name: string, description: string) => {
-    if (!user) return { success: false, error: 'Not authenticated' }
+    if (!user) return { success: false, error: t('errors.notAuthenticated') }
 
     try {
       await apiCall('/groups', {
@@ -118,12 +122,12 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
       await refreshGroups()
       return { success: true }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to create group' }
+      return { success: false, error: error instanceof Error ? error.message : t('groups.errors.createFailed') }
     }
   }
 
   const joinGroup = async (inviteCode: string) => {
-    if (!user) return { success: false, error: 'Not authenticated' }
+    if (!user) return { success: false, error: t('errors.notAuthenticated') }
 
     try {
       await apiCall('/groups/join', {
@@ -134,12 +138,12 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
       await refreshGroups()
       return { success: true }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to join group' }
+      return { success: false, error: error instanceof Error ? error.message : t('groups.errors.joinFailed') }
     }
   }
 
   const leaveGroup = async (groupId: string) => {
-    if (!user) return { success: false, error: 'Not authenticated' }
+    if (!user) return { success: false, error: t('errors.notAuthenticated') }
 
     try {
       await apiCall(`/groups/${groupId}/leave`, {
@@ -150,12 +154,12 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
       await refreshGroups()
       return { success: true }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to leave group' }
+      return { success: false, error: error instanceof Error ? error.message : t('groups.errors.leaveFailed') }
     }
   }
 
   const deleteGroup = async (groupId: string) => {
-    if (!user) return { success: false, error: 'Not authenticated' }
+    if (!user) return { success: false, error: t('errors.notAuthenticated') }
 
     try {
       await apiCall(`/groups/${groupId}`, {
@@ -166,7 +170,7 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
       await refreshGroups()
       return { success: true }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to delete group' }
+      return { success: false, error: error instanceof Error ? error.message : t('groups.errors.deleteFailed') }
     }
   }
 
@@ -183,7 +187,7 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
   }
 
   const shareRecipeWithGroup = async (groupId: string, recipeId: string, recipeContent: string) => {
-    if (!user) return { success: false, error: 'Not authenticated' }
+    if (!user) return { success: false, error: t('errors.notAuthenticated') }
 
     try {
       await apiCall(`/groups/${groupId}/recipes`, {
@@ -198,7 +202,7 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
       
       return { success: true }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to share recipe' }
+      return { success: false, error: error instanceof Error ? error.message : t('groups.errors.shareFailed') }
     }
   }
 
