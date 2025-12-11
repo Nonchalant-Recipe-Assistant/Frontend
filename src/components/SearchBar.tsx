@@ -25,7 +25,6 @@ export function SearchBar() {
         placeholder={t('search.placeholder')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        // pr-12 добавляет отступ справа, чтобы текст не заезжал под кнопку
         className="pr-12 bg-gray-50 focus:bg-white transition-colors"
       />
       <Button 
